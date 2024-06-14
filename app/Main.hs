@@ -1,6 +1,15 @@
 module Main (main) where
 
-import Lib
+import Control.Exception (try)
+import System.Environment (getArgs)
 
 main :: IO ()
-main = someFunc
+main = do
+    args <- getArgs
+    sourceOrErr <- try $ readFile (head args) :: IO (Either IOError String)
+    case sourceOrErr of
+        Right source ->
+            putStrLn source
+
+        Left err ->
+            print err
