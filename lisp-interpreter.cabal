@@ -34,6 +34,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , regex-posix ==0.96.*
   default-language: Haskell2010
 
 executable lisp-interpreter-exe
@@ -46,6 +47,7 @@ executable lisp-interpreter-exe
   build-depends:
       base >=4.7 && <5
     , lisp-interpreter
+    , regex-posix ==0.96.*
   default-language: Haskell2010
 
 test-suite lisp-interpreter-test
@@ -59,4 +61,5 @@ test-suite lisp-interpreter-test
   build-depends:
       base >=4.7 && <5
     , lisp-interpreter
+    , regex-posix ==0.96.*
   default-language: Haskell2010
