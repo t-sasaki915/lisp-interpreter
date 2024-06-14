@@ -33,7 +33,8 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      HUnit ==1.6.*
+    , base >=4.7 && <5
     , regex-posix ==0.96.*
   default-language: Haskell2010
 
@@ -45,7 +46,8 @@ executable lisp-interpreter-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit ==1.6.*
+    , base >=4.7 && <5
     , lisp-interpreter
     , regex-posix ==0.96.*
   default-language: Haskell2010
@@ -54,12 +56,14 @@ test-suite lisp-interpreter-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TokeniserTest
       Paths_lisp_interpreter
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , lisp-interpreter
     , regex-posix ==0.96.*
   default-language: Haskell2010

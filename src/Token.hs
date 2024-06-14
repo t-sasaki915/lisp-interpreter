@@ -9,9 +9,9 @@ data Token = OpenParentheses Int
            deriving Eq
 
 instance Show Token where
-    show (OpenParentheses _)  = "("
-    show (CloseParentheses _) = ")"
-    show (SingleQuote _)      = "'"
-    show (Identifier _ a)     = "Identifier " ++ a
-    show (StringLiteral _ a)  = "String " ++ a
-    show (Number _ a)         = "Number " ++ a
+    show (OpenParentheses n)  = "(" ++ show n ++ ", \"(\")"
+    show (CloseParentheses n) = "(" ++ show n ++ ", \")\")"
+    show (SingleQuote n)      = "(" ++ show n ++ ", \"'\")"
+    show (Identifier n a)     = "(" ++ show n ++ ", Identifier \"" ++ a ++ "\")"
+    show (StringLiteral n a)  = "(" ++ show n ++ ", String \"" ++ a ++ "\")"
+    show (Number n a)         = "(" ++ show n ++ ", Number \"" ++ a ++ "\")"

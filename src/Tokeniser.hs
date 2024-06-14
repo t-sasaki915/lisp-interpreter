@@ -3,7 +3,7 @@ module Tokeniser (TokeniserError(..), tokenise) where
 import ErrorTrace (Tracable(..))
 import Token (Token(..))
 
-import Text.Regex.Posix
+import Text.Regex.Posix ((=~))
 
 data TokeniserError = InvalidNumberFormat String Int String
                     | UnexpectedEOF String Int
