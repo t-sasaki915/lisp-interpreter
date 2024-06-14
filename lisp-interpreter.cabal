@@ -24,7 +24,9 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      ErrorTrace
+      Token
+      Tokeniser
   other-modules:
       Paths_lisp_interpreter
   hs-source-dirs:
