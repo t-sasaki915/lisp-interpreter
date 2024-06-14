@@ -1,6 +1,7 @@
 module Main (main) where
 
 import ErrorTrace (traceError)
+import SyntaxAnalyser (syntaxAnalyse)
 import Tokeniser (tokenise)
 
 import Control.Exception (try)
@@ -14,7 +15,12 @@ main = do
         Right source ->
             case tokenise source of
                 Right tokens ->
-                    print tokens
+                    case syntaxAnalyse source tokens of
+                        Right structure ->
+                            print structure
+                        
+                        Left err ->
+                            putStrLn $ traceError err
                 
                 Left err ->
                     putStrLn $ traceError err

@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
       ErrorTrace
+      SyntaxAnalyser
       Token
       Tokeniser
   other-modules:
