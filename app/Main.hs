@@ -1,6 +1,7 @@
 module Main (main) where
 
 import ErrorTrace (traceError)
+import LispRunner (runLisp)
 import SyntaxAnalyser (syntaxAnalyse)
 import Tokeniser (tokenise)
 
@@ -16,8 +17,14 @@ main = do
             case tokenise source of
                 Right tokens ->
                     case syntaxAnalyse source tokens of
-                        Right structure ->
-                            print structure
+                        Right program -> do
+                            result <- runLisp source program
+                            case result of
+                                Right () ->
+                                    return ()
+                                    
+                                Left err ->
+                                    putStrLn $ traceError err
                         
                         Left err ->
                             putStrLn $ traceError err
