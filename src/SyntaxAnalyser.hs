@@ -9,6 +9,7 @@ import Token (Token(..), tokenIndex, tokenLetter)
 
 data SyntaxAnalyserError = UnexpectedToken String Int String String
                          | UnexpectedEOF String Int
+                         deriving (Eq, Show)
 
 instance Tracable SyntaxAnalyserError where
     place (UnexpectedToken a b _ _) = (a, b)
