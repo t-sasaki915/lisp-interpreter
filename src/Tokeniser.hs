@@ -134,4 +134,13 @@ tokenise' src state character =
                 _ -> Left $ InvalidNumberFormat src n (x : xs)
             where numbers = map (head . show) ([0..9] :: [Int])
 
-        considerIdentifierOrNumber n buffer = Right $ Identifier n buffer
+        considerIdentifierOrNumber n buffer =
+            case buffer of
+                "t" ->
+                    Right $ BoolLiteral n buffer
+                
+                "nil" ->
+                    Right $ BoolLiteral n buffer
+
+                _ ->
+                    Right $ Identifier n buffer

@@ -25,6 +25,7 @@ instance Tracable SyntaxAnalyserError where
 data LispSyntax = VarValue Token
                 | NumValue Token
                 | StrValue Token
+                | BoolValue Token
                 | ExecList [LispSyntax]
                 | RawList [LispSyntax]
                 deriving (Eq, Show)
@@ -118,6 +119,9 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                 (StringLiteral _ _) ->
                     secondLevel (MakingExecList (elems ++ [StrValue token])) (index + 1)
 
+                (BoolLiteral _ _) ->
+                    secondLevel (MakingExecList (elems ++ [BoolValue token])) (index + 1)
+
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                         (\(newIndex, program) ->
@@ -147,6 +151,9 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
 
                 (StringLiteral _ _) ->
                     secondLevel (MakingRawList (elems ++ [StrValue token])) (index + 1)
+
+                (BoolLiteral _ _) ->
+                    secondLevel (MakingRawList (elems ++ [BoolValue token])) (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
