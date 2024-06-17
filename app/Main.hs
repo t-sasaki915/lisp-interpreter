@@ -18,13 +18,13 @@ main = do
                 Right tokens ->
                     case syntaxAnalyse source tokens of
                         Right program -> do
-                            result <- runLisp source program
+                            result <- runLisp program
                             case result of
                                 Right () ->
                                     return ()
                                     
                                 Left err ->
-                                    putStrLn $ traceError err
+                                    print err
                         
                         Left err ->
                             putStrLn $ traceError err
