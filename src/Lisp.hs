@@ -24,7 +24,6 @@ data LispData = LispString String
               | LispNumber Int
               | LispBool Bool
               | LispList [LispData]
-              | LispRawList [LispData]
               | LispVariable String LispData
               | LispVariableBind String
               | LispFunction String ([LispData] -> LispState ->
@@ -35,7 +34,6 @@ instance Eq LispData where
     (==) (LispNumber n1) (LispNumber n2)             = n1 == n2
     (==) (LispBool b1) (LispBool b2)                 = b1 == b2
     (==) (LispList l1) (LispList l2)                 = l1 == l2
-    (==) (LispRawList l1) (LispRawList l2)           = l1 == l2
     (==) (LispVariable n1 d1) (LispVariable n2 d2)   = n1 == n2 && d1 == d2
     (==) (LispVariableBind n1) (LispVariableBind n2) = n1 == n2
     (==) (LispFunction n1 _) (LispFunction n2 _)     = n1 == n2
@@ -46,8 +44,7 @@ instance Show LispData where
     show (LispNumber a)       = show a
     show (LispBool True)      = "t"
     show (LispBool False)     = "nil"
-    show (LispList as)        = "(" ++ unwords (map show as) ++ ")"
-    show (LispRawList as)     = "'(" ++ unwords (map show as) ++ ")"
+    show (LispList as)        = "'(" ++ unwords (map show as) ++ ")"
     show (LispVariable a _)   = a
     show (LispVariableBind a) = a
     show (LispFunction a _)   = a
@@ -60,32 +57,32 @@ data LispState = LispState
 
 lispPredefinedFunctions :: [LispData]
 lispPredefinedFunctions =
-    [ lispAddition
-    , lispSubtraction
-    , lispMultiplication
-    , lispDivision
-    , lispMax
-    , lispMin
-    , lispAbs
-    , lispListp
-    , lispAtom
-    , lispNull
-    , lispEq
-    , lispEqual
-    , lispMinusp
-    , lispPlusp
-    , lispNumberp
-    , lispZerop
-    , lispAnd
-    , lispOr
-    , lispNot
-    , lispCar
-    , lispCdr
-    , lispCons
-    , lispAppend
-    , lispMember
-    , lispReverse
-    , lispFormat
+    [ LispFunction "+" lispAddition
+    , LispFunction "-" lispSubtraction
+    , LispFunction "*" lispMultiplication
+    , LispFunction "/" lispDivision
+    , LispFunction "max" lispMax
+    , LispFunction "min" lispMin
+    , LispFunction "abs" lispAbs
+    , LispFunction "listp" lispListp
+    , LispFunction "atom" lispAtom
+    , LispFunction "null" lispNull
+    , LispFunction "eq" lispEq
+    , LispFunction "equal" lispEqual
+    , LispFunction "minusp" lispMinusp
+    , LispFunction "plusp" lispPlusp
+    , LispFunction "numberp" lispNumberp
+    , LispFunction "zerop" lispZerop
+    , LispFunction "and" lispAnd
+    , LispFunction "or" lispOr
+    , LispFunction "not" lispNot
+    , LispFunction "car" lispCar
+    , LispFunction "cdr" lispCdr
+    , LispFunction "cons" lispCons
+    , LispFunction "append" lispAppend
+    , LispFunction "member" lispMember
+    , LispFunction "reverse" lispReverse
+    , LispFunction "format" lispFormat
     ]
 
 invalidFuncUsage :: String -> LispState -> IO (Either LispError (LispState, LispData))
@@ -94,170 +91,115 @@ invalidFuncUsage name _ = return (Left $ InvalidUsageOfFunction name)
 purely :: LispData -> LispState -> IO (Either LispError (LispState, LispData))
 purely d state = return (Right (state, d))
 
-lispAddition :: LispData
-lispAddition = LispFunction "+" program
-    where
-        program [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 + n2)
-        program _                              = invalidFuncUsage "+"
+type LispFuncProg = [LispData] -> LispState ->
+                    IO (Either LispError (LispState, LispData))
 
-lispSubtraction :: LispData
-lispSubtraction = LispFunction "-" program
-    where
-        program [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 - n2)
-        program _                              = invalidFuncUsage "-"
+lispAddition :: LispFuncProg
+lispAddition [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 + n2)
+lispAddition _                              = invalidFuncUsage "+"
 
-lispMultiplication :: LispData
-lispMultiplication = LispFunction "*" program
-    where
-        program [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 * n2)
-        program _                              = invalidFuncUsage "*"
+lispSubtraction :: LispFuncProg
+lispSubtraction [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 - n2)
+lispSubtraction _                              = invalidFuncUsage "-"
 
-lispDivision :: LispData
-lispDivision = LispFunction "/" program
-    where
-        program [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 `div` n2)
-        program _                              = invalidFuncUsage "/"
+lispMultiplication :: LispFuncProg
+lispMultiplication [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 * n2)
+lispMultiplication _                              = invalidFuncUsage "*"
 
-lispMax :: LispData
-lispMax = LispFunction "max" program
-    where
-        program xs s = return (mapM num xs >>= (\a -> Right (s, LispNumber (maximum a))))
-        num = \case (LispNumber n) -> Right n
-                    _              -> Left $ InvalidUsageOfFunction "max"
+lispDivision :: LispFuncProg
+lispDivision [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 `div` n2)
+lispDivision _                              = invalidFuncUsage "/"
 
-lispMin :: LispData
-lispMin = LispFunction "min" program
-    where
-        program xs s = return (mapM num xs >>= (\a -> Right (s, LispNumber (minimum a))))
-        num = \case (LispNumber n) -> Right n
-                    _              -> Left $ InvalidUsageOfFunction "min"
+lispMax :: LispFuncProg
+lispMax xs s = return (mapM num xs >>= (\a -> Right (s, LispNumber (maximum a))))
+    where num = \case (LispNumber n) -> Right n
+                      _              -> Left $ InvalidUsageOfFunction "max"
 
-lispAbs :: LispData
-lispAbs = LispFunction "abs" program
-    where
-        program [LispNumber n] = purely $ LispNumber (abs n)
-        program _              = invalidFuncUsage "abs"
+lispMin :: LispFuncProg
+lispMin xs s = return (mapM num xs >>= (\a -> Right (s, LispNumber (minimum a))))
+    where num = \case (LispNumber n) -> Right n
+                      _              -> Left $ InvalidUsageOfFunction "min"
 
-lispListp :: LispData
-lispListp = LispFunction "listp" program
-    where
-        program [LispList _]    = purely $ LispBool True
-        program [LispRawList _] = purely $ LispBool True
-        program [_]             = purely $ LispBool False
-        program _               = invalidFuncUsage "listp"
+lispAbs :: LispFuncProg
+lispAbs [LispNumber n] = purely $ LispNumber (abs n)
+lispAbs _              = invalidFuncUsage "abs"
 
-lispAtom :: LispData
-lispAtom = LispFunction "atom" program
-    where
-        program [LispString _] = purely $ LispBool True
-        program [LispNumber _] = purely $ LispBool True
-        program [LispBool _]   = purely $ LispBool True
-        program [_]            = purely $ LispBool False
-        program _              = invalidFuncUsage "atom"
+lispListp :: LispFuncProg
+lispListp [LispList _] = purely $ LispBool True
+lispListp [_]          = purely $ LispBool False
+lispListp _            = invalidFuncUsage "listp"
 
-lispNull :: LispData
-lispNull = LispFunction "null" program
-    where
-        program [LispList lst]    = purely $ LispBool (null lst)
-        program [LispRawList lst] = purely $ LispBool (null lst)
-        program _                 = invalidFuncUsage "null"
+lispAtom :: LispFuncProg
+lispAtom [LispString _] = purely $ LispBool True
+lispAtom [LispNumber _] = purely $ LispBool True
+lispAtom [LispBool _]   = purely $ LispBool True
+lispAtom [_]            = purely $ LispBool False
+lispAtom _              = invalidFuncUsage "atom"
 
-lispEq :: LispData
-lispEq = LispFunction "eq" program
-    where
-        program [a, b] = purely $ LispBool (a == b)
-        program _      = invalidFuncUsage "eq"
+lispNull :: LispFuncProg
+lispNull [LispList lst] = purely $ LispBool (null lst)
+lispNull _              = invalidFuncUsage "null"
 
-lispEqual :: LispData
-lispEqual = LispFunction "equal" program
-    where
-        program [a, b] = purely $ LispBool (a == b)
-        program _      = invalidFuncUsage "equal"
+lispEq :: LispFuncProg
+lispEq [a, b] = purely $ LispBool (a == b)
+lispEq _      = invalidFuncUsage "eq"
 
-lispMinusp :: LispData
-lispMinusp = LispFunction "minusp" program
-    where
-        program [LispNumber n] = purely $ LispBool (n < 0)
-        program _              = invalidFuncUsage "minusp"
+lispEqual :: LispFuncProg
+lispEqual [a, b] = purely $ LispBool (a == b)
+lispEqual _      = invalidFuncUsage "equal"
 
-lispPlusp :: LispData
-lispPlusp = LispFunction "plusp" program
-    where
-        program [LispNumber n] = purely $ LispBool (n > 0)
-        program _              = invalidFuncUsage "plusp"
+lispMinusp :: LispFuncProg
+lispMinusp [LispNumber n] = purely $ LispBool (n < 0)
+lispMinusp _              = invalidFuncUsage "minusp"
 
-lispNumberp :: LispData
-lispNumberp = LispFunction "numberp" program
-    where
-        program [LispNumber _] = purely $ LispBool True
-        program [_]            = purely $ LispBool False
-        program _              = invalidFuncUsage "numberp"
+lispPlusp :: LispFuncProg
+lispPlusp [LispNumber n] = purely $ LispBool (n > 0)
+lispPlusp _              = invalidFuncUsage "plusp"
 
-lispZerop :: LispData
-lispZerop = LispFunction "zerop" program
-    where
-        program [LispNumber n] = purely $ LispBool (n == 0)
-        program _              = invalidFuncUsage "zerop"
+lispNumberp :: LispFuncProg
+lispNumberp [LispNumber _] = purely $ LispBool True
+lispNumberp [_]            = purely $ LispBool False
+lispNumberp _              = invalidFuncUsage "numberp"
 
-lispAnd :: LispData
-lispAnd = LispFunction "and" program
-    where
-        program [LispBool b1, LispBool b2] = purely $ LispBool (b1 && b2)
-        program _                          = invalidFuncUsage "and"
+lispZerop :: LispFuncProg
+lispZerop [LispNumber n] = purely $ LispBool (n == 0)
+lispZerop _              = invalidFuncUsage "zerop"
 
-lispOr :: LispData
-lispOr = LispFunction "or" program
-    where
-        program [LispBool b1, LispBool b2] = purely $ LispBool (b1 || b2)
-        program _                          = invalidFuncUsage "or"
+lispAnd :: LispFuncProg
+lispAnd [LispBool b1, LispBool b2] = purely $ LispBool (b1 && b2)
+lispAnd _                          = invalidFuncUsage "and"
 
-lispNot :: LispData
-lispNot = LispFunction "not" program
-    where
-        program [LispBool b] = purely $ LispBool (not b)
-        program _            = invalidFuncUsage "not"
+lispOr :: LispFuncProg
+lispOr  [LispBool b1, LispBool b2] = purely $ LispBool (b1 || b2)
+lispOr _                           = invalidFuncUsage "or"
 
-lispCar :: LispData
-lispCar = LispFunction "car" program
-    where
-        program [LispList xs]    = purely $ head xs
-        program [LispRawList xs] = purely $ head xs
-        program _                = invalidFuncUsage "car"
+lispNot :: LispFuncProg
+lispNot [LispBool b] = purely $ LispBool (not b)
+lispNot _            = invalidFuncUsage "not"
 
-lispCdr :: LispData
-lispCdr = LispFunction "cdr" program
-    where
-        program [LispList xs]    = purely $ LispList (drop 1 xs)
-        program [LispRawList xs] = purely $ LispRawList (drop 1 xs)
-        program _                = invalidFuncUsage "cdr"
+lispCar :: LispFuncProg
+lispCar [LispList xs] = purely $ head xs
+lispCar _             = invalidFuncUsage "car"
 
-lispCons :: LispData
-lispCons = LispFunction "cons" program
-    where
-        program [x, LispList xs]    = purely $ LispList (x : xs)
-        program [x, LispRawList xs] = purely $ LispRawList (x : xs)
-        program _                   = invalidFuncUsage "cons"
+lispCdr :: LispFuncProg
+lispCdr [LispList xs] = purely $ LispList (drop 1 xs)
+lispCdr _             = invalidFuncUsage "cdr"
 
-lispAppend :: LispData
-lispAppend = LispFunction "append" program
-    where
-        program [LispList xs, LispList ys]       = purely $ LispList (xs ++ ys)
-        program [LispRawList xs, LispRawList ys] = purely $ LispRawList (xs ++ ys)
-        program _                                = invalidFuncUsage "append"
+lispCons :: LispFuncProg
+lispCons [x, LispList xs] = purely $ LispList (x : xs)
+lispCons _                = invalidFuncUsage "cons"
 
-lispMember :: LispData
-lispMember = LispFunction "member" program
-    where
-        program [x, LispList xs]    = purely $ LispList (dropWhile (x /=) xs)
-        program [x, LispRawList xs] = purely $ LispRawList (dropWhile (x /=) xs)
-        program _                   = invalidFuncUsage "member"
+lispAppend :: LispFuncProg
+lispAppend [LispList xs, LispList ys] = purely $ LispList (xs ++ ys)
+lispAppend _                          = invalidFuncUsage "append"
 
-lispReverse :: LispData
-lispReverse = LispFunction "reverse" program
-    where
-        program [LispList xs]    = purely $ LispList (reverse xs)
-        program [LispRawList xs] = purely $ LispRawList (reverse xs)
-        program _                = invalidFuncUsage "reverse"
+lispMember :: LispFuncProg
+lispMember [x, LispList xs] = purely $ LispList (dropWhile (x /=) xs)
+lispMember _                = invalidFuncUsage "member"
+
+lispReverse :: LispFuncProg
+lispReverse [LispList xs] = purely $ LispList (reverse xs)
+lispReverse _             = invalidFuncUsage "reverse"
 
 data FormatCommand = ShowTilde String
                    | ShowNewLine String
@@ -306,7 +248,9 @@ extractFormatCommands str = fst $ foldl
             (Right cmds, ExpectNumberOrCommand raw buffer) ->
                 case charac of
                     c | c `elem` map (head . show) ([0..9] :: [Int]) ->
-                        (Right cmds, ExpectNumberOrCommand (raw ++ [c]) (buffer ++ [c]))
+                        ( Right cmds
+                        , ExpectNumberOrCommand (raw ++ [c]) (buffer ++ [c])
+                        )
 
                     c | c `elem` map fCmdLetter fCmdSyntaxes ->
                         case getFCmdSyntax c of
@@ -324,7 +268,9 @@ extractFormatCommands str = fst $ foldl
                             Just (FCmdSyntaxIndentAllowed _ f) ->
                                 case readMaybe buffer of
                                     Just i ->
-                                        (Right $ cmds ++ [f (raw ++ [c]) i], WaitForTilde)
+                                        ( Right $ cmds ++ [f (raw ++ [c]) i]
+                                        , WaitForTilde
+                                        )
 
                                     Nothing ->
                                         ( Left $ FormatError "Not a number" buffer
@@ -337,7 +283,9 @@ extractFormatCommands str = fst $ foldl
                                 )
 
                     c ->
-                        (Left $ FormatError "Unrecognisable character" [c], WaitForTilde)
+                        ( Left $ FormatError "Unrecognisable character" [c]
+                        , WaitForTilde
+                        )
     )
     (Right [], WaitForTilde)
     str
@@ -403,17 +351,15 @@ makeString str args cmds = fst $ foldl
         addIndent d ind | length d >= ind = d
         addIndent d ind = replicate (ind - length d) ' ' ++ d
 
-lispFormat :: LispData
-lispFormat = LispFunction "format" program
-    where
-        program ((LispBool True) : (LispString str) : xs) s =
-            sequence $
-                extractFormatCommands str >>=
-                    makeString str xs >>=
-                        (\f -> Right $ putStr f >> return (s, LispBool False))
-        program ((LispBool False) : (LispString str) : xs) s =
-            sequence $
-                extractFormatCommands str >>=
-                    makeString str xs >>=
-                        (\f -> Right $ return (s, LispString f))
-        program _ s = invalidFuncUsage "format" s
+lispFormat :: LispFuncProg
+lispFormat ((LispBool True) : (LispString str) : xs) s =
+    sequence $
+        extractFormatCommands str >>=
+            makeString str xs >>=
+                (\f -> Right $ putStr f >> return (s, LispBool False))
+lispFormat ((LispBool False) : (LispString str) : xs) s =
+    sequence $
+        extractFormatCommands str >>=
+            makeString str xs >>=
+                (\f -> Right $ return (s, LispString f))
+lispFormat _ s = invalidFuncUsage "format" s

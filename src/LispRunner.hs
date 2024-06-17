@@ -46,7 +46,7 @@ parseSyntax state =
             result <- parseSyntaxes state lst
             case result of
                 Right (newState, lst') ->
-                    return $ Right (newState, LispRawList lst')
+                    return $ Right (newState, LispList lst')
 
                 Left err ->
                     return $ Left err
