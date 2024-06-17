@@ -57,32 +57,33 @@ data LispState = LispState
 
 lispPredefinedFunctions :: [LispData]
 lispPredefinedFunctions =
-    [ LispFunction "+" lispAddition
-    , LispFunction "-" lispSubtraction
-    , LispFunction "*" lispMultiplication
-    , LispFunction "/" lispDivision
-    , LispFunction "max" lispMax
-    , LispFunction "min" lispMin
-    , LispFunction "abs" lispAbs
-    , LispFunction "listp" lispListp
-    , LispFunction "atom" lispAtom
-    , LispFunction "null" lispNull
-    , LispFunction "eq" lispEq
-    , LispFunction "equal" lispEqual
-    , LispFunction "minusp" lispMinusp
-    , LispFunction "plusp" lispPlusp
+    [ LispFunction "+"       lispAddition
+    , LispFunction "-"       lispSubtraction
+    , LispFunction "*"       lispMultiplication
+    , LispFunction "/"       lispDivision
+    , LispFunction "max"     lispMax
+    , LispFunction "min"     lispMin
+    , LispFunction "abs"     lispAbs
+    , LispFunction "listp"   lispListp
+    , LispFunction "atom"    lispAtom
+    , LispFunction "null"    lispNull
+    , LispFunction "eq"      lispEq
+    , LispFunction "equal"   lispEqual
+    , LispFunction "minusp"  lispMinusp
+    , LispFunction "plusp"   lispPlusp
     , LispFunction "numberp" lispNumberp
-    , LispFunction "zerop" lispZerop
-    , LispFunction "and" lispAnd
-    , LispFunction "or" lispOr
-    , LispFunction "not" lispNot
-    , LispFunction "car" lispCar
-    , LispFunction "cdr" lispCdr
-    , LispFunction "cons" lispCons
-    , LispFunction "append" lispAppend
-    , LispFunction "member" lispMember
+    , LispFunction "zerop"   lispZerop
+    , LispFunction "and"     lispAnd
+    , LispFunction "or"      lispOr
+    , LispFunction "not"     lispNot
+    , LispFunction "car"     lispCar
+    , LispFunction "cdr"     lispCdr
+    , LispFunction "cons"    lispCons
+    , LispFunction "append"  lispAppend
+    , LispFunction "member"  lispMember
     , LispFunction "reverse" lispReverse
-    , LispFunction "format" lispFormat
+    , LispFunction "format"  lispFormat
+    , LispFunction "eval"    lispEval
     ]
 
 invalidFuncUsage :: String -> LispState -> IO (Either LispError (LispState, LispData))
@@ -363,3 +364,8 @@ lispFormat ((LispBool False) : (LispString str) : xs) s =
             makeString str xs >>=
                 (\f -> Right $ return (s, LispString f))
 lispFormat _ s = invalidFuncUsage "format" s
+
+lispEval :: LispFuncProg
+lispEval [LispList [LispFunction _ f]]        = f []
+lispEval [LispList (LispFunction _ f : args)] = f args
+lispEval _                                    = invalidFuncUsage "eval"
