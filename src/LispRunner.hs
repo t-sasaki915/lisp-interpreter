@@ -106,11 +106,14 @@ parseSyntax state =
 
                 Nothing ->
                     case find (variableMatch var) (_variables state) of
+                        Just (LispVariable _ v) ->
+                            return $ Right (state, v)
+
                         Just f ->
                             return $ Right (state, f)
 
                         Nothing ->
-                            return $ Left (UndefinedIdentifier var)
+                            return $ Right (state, LispVariableBind var)
 
         (NumValue t) ->
             return $ Left (InvalidToken (tokenLetter t))

@@ -111,16 +111,20 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         secondLevel (MakingExecList elems) index =
             let token = tokens !! index in case token of
                 (Identifier _ _) ->
-                    secondLevel (MakingExecList (elems ++ [VarValue token])) (index + 1)
+                    secondLevel
+                        (MakingExecList (elems ++ [VarValue token])) (index + 1)
 
                 (Number _ _) ->
-                    secondLevel (MakingExecList (elems ++ [NumValue token])) (index + 1)
+                    secondLevel
+                        (MakingExecList (elems ++ [NumValue token])) (index + 1)
 
                 (StringLiteral _ _) ->
-                    secondLevel (MakingExecList (elems ++ [StrValue token])) (index + 1)
+                    secondLevel
+                        (MakingExecList (elems ++ [StrValue token])) (index + 1)
 
                 (BoolLiteral _ _) ->
-                    secondLevel (MakingExecList (elems ++ [BoolValue token])) (index + 1)
+                    secondLevel
+                        (MakingExecList (elems ++ [BoolValue token])) (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
@@ -144,16 +148,20 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         secondLevel (MakingRawList elems) index =
             let token = tokens !! index in case token of
                 (Identifier _ _) ->
-                    secondLevel (MakingRawList (elems ++ [VarValue token])) (index + 1)
+                    secondLevel
+                        (MakingRawList (elems ++ [VarValue token])) (index + 1)
 
                 (Number _ _) ->
-                    secondLevel (MakingRawList (elems ++ [NumValue token])) (index + 1)
+                    secondLevel
+                        (MakingRawList (elems ++ [NumValue token])) (index + 1)
 
                 (StringLiteral _ _) ->
-                    secondLevel (MakingRawList (elems ++ [StrValue token])) (index + 1)
+                    secondLevel
+                        (MakingRawList (elems ++ [StrValue token])) (index + 1)
 
                 (BoolLiteral _ _) ->
-                    secondLevel (MakingRawList (elems ++ [BoolValue token])) (index + 1)
+                    secondLevel
+                        (MakingRawList (elems ++ [BoolValue token])) (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
@@ -174,4 +182,5 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                 (CloseParentheses _) ->
                     Right (index, RawList elems)
 
-        unexpectedToken t e = Left $ UnexpectedToken src (tokenIndex t) (tokenLetter t) e
+        unexpectedToken t e =
+            Left $ UnexpectedToken src (tokenIndex t) (tokenLetter t) e

@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Lisp
     ( LispError(..)
@@ -9,6 +10,8 @@ module Lisp
 
 import ListExtra ((!?), replaceFirst)
 
+import Control.Lens
+import Control.Monad (foldM)
 import Data.List (find)
 import Text.Read (readMaybe)
 
@@ -50,10 +53,12 @@ instance Show LispData where
     show (LispFunction a _)   = a
 
 data LispState = LispState
-    { _functions :: [LispData]
-    , _variables :: [LispData]
+    { _functions      :: [LispData]
+    , _variables      :: [LispData]
     }
     deriving (Eq, Show)
+
+makeLenses ''LispState
 
 lispPredefinedFunctions :: [LispData]
 lispPredefinedFunctions =
@@ -84,6 +89,7 @@ lispPredefinedFunctions =
     , LispFunction "reverse" lispReverse
     , LispFunction "format"  lispFormat
     , LispFunction "eval"    lispEval
+    , LispFunction "defun"   lispDefun
     ]
 
 invalidFuncUsage :: String -> LispState -> IO (Either LispError (LispState, LispData))
@@ -369,3 +375,45 @@ lispEval :: LispFuncProg
 lispEval [LispList [LispFunction _ f]]        = f []
 lispEval [LispList (LispFunction _ f : args)] = f args
 lispEval _                                    = invalidFuncUsage "eval"
+
+lispDefun :: LispFuncProg
+lispDefun (LispVariableBind name : LispList args : progs) s =
+    return $
+        Right
+            ( over functions (++ [LispFunction name program]) s
+            , LispBool False
+            )
+    where
+        program :: LispFuncProg
+        program args' s' | length args /= length args' =
+            invalidFuncUsage name s'
+        program args' s' =
+            let
+                varsEither =
+                    mapM bindName args >>=
+                        (\a -> mapM (Right . uncurry LispVariable) (zip a args'))
+            in
+            case varsEither of
+                Right vars ->
+                    foldM
+                        (\state d ->
+                            case state of
+                                (Left _) -> return state
+                                (Right (s'', _)) ->
+                                    case d of
+                                        (LispList [LispFunction _ f]) ->
+                                            f [] s''
+
+                                        _ ->
+                                            return $ Right (s'', d)
+                        )
+                        (Right (over variables (++ vars) s', LispBool False))
+                        progs
+
+                Left err ->
+                    return $ Left err
+
+        bindName = \case (LispVariableBind a) -> Right a
+                         _ -> Left (InvalidUsageOfFunction "defun")
+
+lispDefun _ s = invalidFuncUsage "defun" s
