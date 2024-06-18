@@ -60,14 +60,8 @@ lispDefun ind st args =
             fromMaybe
                 ( fromMaybe
                     ( fromMaybe
-                        ( fromMaybe
-                            ( fromMaybe
-                                (Right name)
-                                (search name varBindFilt _variables)
-                            )
-                            (search name varFilt _variables)
-                        )
-                        (search name varBindFilt _localVariables)
+                        (Right name)
+                        (search name varFilt _variables)
                     )
                     (search name varFilt _localVariables)
                 )

@@ -110,48 +110,26 @@ evaluate state =
                             return $
                                 Right (st, dt ++ [LispFunction n l p])
 
-                        (LispVariableBind n l) ->
-                            return $
-                                Left (UninitialisedVariableAccess n l)
-
                         (LispIdentifier n lb) ->
                             let
                                 search filt store = find (filt lb) (store st) >>=
                                     (\case
-                                        (LispVariable _ _ v) -> Just $ Right (st, v)
-                                        x -> Just $ Right (st, x)
+                                        (LispVariable _ _ v) ->
+                                            Just $ Right (st, dt ++ [v])
+                                        x ->
+                                            Just $ Right (st, dt ++ [x])
                                     )
-                                res1 =
-                                    fromMaybe
-                                        ( fromMaybe
-                                            ( fromMaybe
-                                                (Left $ UndefinedIdentifier n lb)
-                                                (search varFilt _variables)
-                                            )
-                                            (search varFilt _localVariables)
-                                        )
-                                        (search funcFilt _functions)
                             in
-                            case res1 of
-                                Right (st', d) ->
-                                    return $
-                                        Right (st', dt ++ [d])
-
-                                Left undefErr ->
-                                    case find (varBindFilt lb) (_localVariables st) of
-                                        Just _ ->
-                                            return $
-                                                Left (UninitialisedVariableAccess n lb)
-
-                                        Nothing ->
-                                            case find (varBindFilt lb) (_variables st) of
-                                                Just _ ->
-                                                    return $
-                                                        Left 
-                                                            (UninitialisedVariableAccess n lb)
-
-                                                Nothing ->
-                                                    return $ Left undefErr
+                            return $
+                                fromMaybe
+                                    ( fromMaybe
+                                        ( fromMaybe
+                                            (Left $ UndefinedIdentifier n lb)
+                                            (search varFilt _variables)
+                                        )
+                                        (search varFilt _localVariables)
+                                    )
+                                    (search funcFilt _functions)
         )
         (Right (state, []))
     where

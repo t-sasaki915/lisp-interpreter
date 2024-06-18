@@ -6,7 +6,6 @@ module LispData
     , LispState(..)
     , lispDataIndex
     , varFilt
-    , varBindFilt
     , funcFilt
     , expectNumber
     , expectString
@@ -28,7 +27,6 @@ data LispData = LispString Int String
               | LispList Int [LispData]
               | LispLazyList Int [LispData]
               | LispVariable Int String LispData
-              | LispVariableBind Int String
               | LispIdentifier Int String
               | LispFunction Int String (Int -> LispState -> [LispData] ->
                              IO (Either LispError (LispState, LispData)))
@@ -48,7 +46,6 @@ lispDataIndex (LispBool n _)         = n
 lispDataIndex (LispList n _)         = n
 lispDataIndex (LispLazyList n _)     = n
 lispDataIndex (LispVariable n _ _)   = n
-lispDataIndex (LispVariableBind n _) = n
 lispDataIndex (LispIdentifier n _)   = n
 lispDataIndex (LispFunction n _ _)   = n
 
@@ -56,11 +53,6 @@ varFilt :: String -> LispData -> Bool
 varFilt name =
     \case (LispVariable _ n _) -> n == name
           _                    -> False
-
-varBindFilt :: String -> LispData -> Bool
-varBindFilt name =
-    \case (LispVariableBind _ n) -> n == name
-          _                      -> False
 
 funcFilt :: String -> LispData -> Bool
 funcFilt name =
@@ -107,12 +99,10 @@ instance Show LispData where
         "'(" ++ unwords (map show l) ++ ")"
     show (LispVariable _ l d) =
         l ++ " := " ++ show d
-    show (LispVariableBind _ l) =
-        l ++ " := ???"
     show (LispIdentifier _ i) =
-        "identifier \"" ++ i ++ "\""
+        "Identifier \"" ++ i ++ "\""
     show (LispFunction _ l _) =
-        "function \"" ++ l ++ "\""
+        "Function \"" ++ l ++ "\""
 
 instance Eq LispData where
     (==) (LispString n1 s1) (LispString n2 s2) =
@@ -127,8 +117,6 @@ instance Eq LispData where
         n1 == n2 && l1 == l2
     (==) (LispVariable n1 l1 d1) (LispVariable n2 l2 d2) =
         n1 == n2 && l1 == l2 && d1 == d2
-    (==) (LispVariableBind n1 l1) (LispVariableBind n2 l2) =
-        n1 == n2 && l1 == l2
     (==) (LispIdentifier n1 i1) (LispIdentifier n2 i2) =
         n1 == n2 && i1 == i2
     (==) (LispFunction n1 l1 _) (LispFunction n2 l2 _) =
