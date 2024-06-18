@@ -25,12 +25,12 @@ syntaxAnalyserTest1 = syntaxAnalyserTest
         ]
     )
     ( Right
-        [ InstantList 0
+        [ InstantList 6
             [ NumberRef 1 1
             , NumberRef 3 2
             , NumberRef 5 3
             ]
-        , LazyList 8
+        , LazyList 19
             [ IdentifierRef 10 "a"
             , IdentifierRef 12 "+"
             , StringRef 18 "aaa"
@@ -42,23 +42,23 @@ syntaxAnalyserTest2 :: Test
 syntaxAnalyserTest2 = syntaxAnalyserTest
     "'((0) 1 2 (3 4 (5 6) 7) 8 (9))"
     ( Right
-        [ LazyList 0
-            [ InstantList 2
+        [ LazyList 29
+            [ InstantList 4
                 [ NumberRef 3 0
                 ]
             , NumberRef 6 1
             , NumberRef 8 2
-            , InstantList 10
+            , InstantList 22
                 [ NumberRef 11 3
                 , NumberRef 13 4
-                , InstantList 15
+                , InstantList 19
                     [ NumberRef 16 5
                     , NumberRef 18 6
                     ]
                 , NumberRef 21 7
                 ]
             , NumberRef 24 8
-            , InstantList 26
+            , InstantList 28
                 [ NumberRef 27 9
                 ]
             ]
@@ -78,26 +78,26 @@ syntaxAnalyserTest3 = syntaxAnalyserTest
         ]
     )
     ( Right
-        [ InstantList 21
+        [ InstantList 95
             [ IdentifierRef 25 "defn"
             , IdentifierRef 35 "factorial"
-            , InstantList 37
+            , InstantList 39
                 [ IdentifierRef 38 "n"
                 ]
-            , InstantList 43
+            , InstantList 93
                 [ IdentifierRef 45 "if"
-                , InstantList 47
+                , InstantList 53
                     [ IdentifierRef 48 "="
                     , IdentifierRef 50 "n"
                     , NumberRef 52 1
                     ]
                 , NumberRef 59 1
-                , InstantList 65
+                , InstantList 89
                     [ IdentifierRef 66 "*"
                     , IdentifierRef 68 "n"
-                    , InstantList 70
+                    , InstantList 88
                         [ IdentifierRef 79 "factorial"
-                        , InstantList 81
+                        , InstantList 87
                             [ IdentifierRef 82 "-"
                             , IdentifierRef 84 "n"
                             , NumberRef 86 1

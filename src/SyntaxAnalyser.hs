@@ -24,8 +24,8 @@ instance Tracable SyntaxAnalyserError where
 
 data State = ExpectingOpenParenthesesOrSingleQuote
            | ExpectingOpenParentheses 
-           | MakingInstantList Int [Syntax]
-           | MakingLazyList Int [Syntax]
+           | MakingInstantList [Syntax]
+           | MakingLazyList [Syntax]
 
 syntaxAnalyse :: [Token] -> Either SyntaxAnalyserError [Syntax]
 syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
@@ -43,7 +43,7 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         topLevel ExpectingOpenParenthesesOrSingleQuote index determined =
             case tokens !! index of
                 (OpenParentheses _) ->
-                    topLevel (MakingInstantList 0 []) index determined
+                    topLevel (MakingInstantList []) index determined
             
                 (SingleQuote _) ->
                     topLevel ExpectingOpenParentheses (index + 1) determined
@@ -54,12 +54,12 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         topLevel ExpectingOpenParentheses index determined =
             case tokens !! index of
                 (OpenParentheses _) ->
-                    topLevel (MakingLazyList 0 []) (index - 1) determined
+                    topLevel (MakingLazyList []) (index - 1) determined
 
                 t ->
                     unexpectedToken t "'('"
         
-        topLevel (MakingInstantList _ _) index determined =
+        topLevel (MakingInstantList _) index determined =
             secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                 (\(newIndex, program) ->
                     topLevel
@@ -68,7 +68,7 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                                 (determined ++ [program])
                 )
 
-        topLevel (MakingLazyList _ _) index determined =
+        topLevel (MakingLazyList _) index determined =
             secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                 (\(newIndex, program) ->
                     topLevel
@@ -83,8 +83,8 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         
         secondLevel ExpectingOpenParenthesesOrSingleQuote index =
             case tokens !! index of
-                (OpenParentheses n) ->
-                    secondLevel (MakingInstantList n []) (index + 1)
+                (OpenParentheses _) ->
+                    secondLevel (MakingInstantList []) (index + 1)
 
                 (SingleQuote _) ->
                     secondLevel ExpectingOpenParentheses (index + 1)
@@ -94,39 +94,39 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         
         secondLevel ExpectingOpenParentheses index =
             case tokens !! index of
-                (OpenParentheses n) ->
-                    secondLevel (MakingLazyList (n - 1) []) (index + 1)
+                (OpenParentheses _) ->
+                    secondLevel (MakingLazyList []) (index + 1)
 
                 t ->
                     unexpectedToken t "'('"
         
-        secondLevel (MakingInstantList n elems) index =
+        secondLevel (MakingInstantList elems) index =
             case tokens !! index of
                 (Identifier p t) ->
                     secondLevel
-                        (MakingInstantList n (elems ++ [IdentifierRef p t])) (index + 1)
+                        (MakingInstantList (elems ++ [IdentifierRef p t])) (index + 1)
 
                 (Number p t) ->
                     secondLevel
-                        (MakingInstantList n (elems ++ [NumberRef p (read t)])) (index + 1)
+                        (MakingInstantList (elems ++ [NumberRef p (read t)])) (index + 1)
 
                 (StringLiteral p t) ->
                     secondLevel
-                        (MakingInstantList n (elems ++ [StringRef p t])) (index + 1)
+                        (MakingInstantList (elems ++ [StringRef p t])) (index + 1)
 
                 (BoolLiteral p "t") ->
                     secondLevel
-                        (MakingInstantList n (elems ++ [BoolRef p True])) (index + 1)
+                        (MakingInstantList (elems ++ [BoolRef p True])) (index + 1)
 
                 (BoolLiteral p _) ->
                     secondLevel
-                        (MakingInstantList n (elems ++ [BoolRef p False])) (index + 1)
+                        (MakingInstantList (elems ++ [BoolRef p False])) (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                         (\(newIndex, program) ->
                             secondLevel
-                                (MakingInstantList n (elems ++ [program]))
+                                (MakingInstantList (elems ++ [program]))
                                     (newIndex + 1)
                         )
                 
@@ -134,40 +134,40 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                         (\(newIndex, program) ->
                             secondLevel
-                                (MakingInstantList n (elems ++ [program]))
+                                (MakingInstantList (elems ++ [program]))
                                     (newIndex + 1)
                         )
 
-                (CloseParentheses _) ->
+                (CloseParentheses n) ->
                     Right (index, InstantList n elems)
 
-        secondLevel (MakingLazyList n elems) index =
+        secondLevel (MakingLazyList elems) index =
             case tokens !! index of
                 (Identifier p t) ->
                     secondLevel
-                        (MakingLazyList n (elems ++ [IdentifierRef p t])) (index + 1)
+                        (MakingLazyList (elems ++ [IdentifierRef p t])) (index + 1)
 
                 (Number p t) ->
                     secondLevel
-                        (MakingLazyList n (elems ++ [NumberRef p (read t)])) (index + 1)
+                        (MakingLazyList (elems ++ [NumberRef p (read t)])) (index + 1)
 
                 (StringLiteral p t) ->
                     secondLevel
-                        (MakingLazyList n (elems ++ [StringRef p t])) (index + 1)
+                        (MakingLazyList (elems ++ [StringRef p t])) (index + 1)
 
                 (BoolLiteral p "t") ->
                     secondLevel
-                        (MakingLazyList n (elems ++ [BoolRef p True])) (index + 1)
+                        (MakingLazyList (elems ++ [BoolRef p True])) (index + 1)
 
                 (BoolLiteral p _) ->
                     secondLevel
-                        (MakingLazyList n (elems ++ [BoolRef p False])) (index + 1)
+                        (MakingLazyList (elems ++ [BoolRef p False])) (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                         (\(newIndex, program) ->
                             secondLevel
-                                (MakingLazyList n (elems ++ [program]))
+                                (MakingLazyList (elems ++ [program]))
                                     (newIndex + 1)
                         )
                 
@@ -175,11 +175,11 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
                         (\(newIndex, program) ->
                             secondLevel
-                                (MakingLazyList n (elems ++ [program]))
+                                (MakingLazyList (elems ++ [program]))
                                     (newIndex + 1)
                         )
 
-                (CloseParentheses _) ->
+                (CloseParentheses n) ->
                     Right (index, LazyList n elems)
 
         unexpectedToken t e =
