@@ -30,6 +30,7 @@ library
       LispInterpreter
       LispPredef
       LispPredefMathsLogic
+      LispPredefSyntax
       LispPredefUtil
       LispRunner
       ListExtra

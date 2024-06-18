@@ -12,15 +12,8 @@ runLisp program = do
         Right (state, program') -> do
             res <- evaluate state program'
             case res of
-                Right (_, []) ->
-                    return $ Right ()
-
-                Right (_, [v]) ->
-                    print v >>
-                        return (Right ())
-
-                Right (_, v : _) ->
-                    print v >>
+                Right (_, v) ->
+                    print (last v) >>
                         return (Right ())
 
                 Left err ->

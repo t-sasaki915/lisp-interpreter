@@ -8,6 +8,7 @@ data LispError = UndefinedIdentifier Int String
                | UninitialisedVariableAccess Int String
                | TooFewArguments Int Int
                | TooManyArguments Int Int
+               | IdentifierConfliction Int String
                | BrokenProgramStructure Int String
                deriving (Eq, Show)
 
@@ -18,6 +19,7 @@ instance Tracable LispError where
     place (UninitialisedVariableAccess a _) = a
     place (TooFewArguments a _)             = a
     place (TooManyArguments a _)            = a
+    place (IdentifierConfliction a _)       = a
     place (BrokenProgramStructure a _)      = a
 
     title (UndefinedIdentifier {})          = "Undefined identifier"
@@ -27,6 +29,7 @@ instance Tracable LispError where
         "Uninitialised variable access"
     title (TooFewArguments {})              = "Too few arguments"
     title (TooManyArguments {})             = "Too many arguments"
+    title (IdentifierConfliction {})        = "Identifier confliction"
     title (BrokenProgramStructure {})       = "Broken program structure"
 
     cause (UndefinedIdentifier _ a)         = a
@@ -39,5 +42,6 @@ instance Tracable LispError where
         "This function requires at least " ++ show a ++ " arguments."
     cause (TooManyArguments _ a)            =
         "The acceptable number of arguments for this function is " ++ show a ++ "."
+    cause (IdentifierConfliction _ a)       = a
     cause (BrokenProgramStructure _ a)      =
         "Illegal " ++ a ++ " has found, which should not be happend."

@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module LispData
     ( LispData(..)
@@ -10,9 +11,16 @@ module LispData
     , expectNumber
     , expectString
     , expectBool
+    , expectIdentifier
+    , expectList
+    , functions
+    , variables
+    , localVariables
     ) where
 
 import LispError (LispError(..))
+
+import Control.Lens
 
 data LispData = LispString Int String
               | LispNumber Int Int
@@ -30,7 +38,8 @@ data LispState = LispState
     , _variables      :: [LispData]
     , _localVariables :: [LispData]
     }
-    deriving (Eq, Show)
+
+makeLenses ''LispState
 
 lispDataIndex :: LispData -> Int
 lispDataIndex (LispString n _)       = n
@@ -72,6 +81,16 @@ expectBool :: LispData -> Either LispError Bool
 expectBool =
     \case (LispBool _ b) -> Right b
           d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Bool"
+
+expectIdentifier :: LispData -> Either LispError String
+expectIdentifier =
+    \case (LispIdentifier _ i) -> Right i
+          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Identifier"
+
+expectList :: LispData -> Either LispError [LispData]
+expectList =
+    \case (LispList _ l) -> Right l
+          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "List"
 
 instance Show LispData where
     show (LispString _ s) =
