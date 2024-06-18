@@ -29,6 +29,8 @@ library
       LispError
       LispInterpreter
       LispPredef
+      LispPredefMathsLogic
+      LispPredefUtil
       LispRunner
       ListExtra
       Syntax
