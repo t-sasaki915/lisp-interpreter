@@ -1,10 +1,10 @@
 module SyntaxAnalyser
     ( SyntaxAnalyserError(..)
-    , LispSyntax(..)
     , syntaxAnalyse
     ) where
 
 import ErrorTrace (Tracable(..))
+import Syntax (Syntax(..))
 import Token (Token(..), tokenIndex, tokenLetter)
 
 data SyntaxAnalyserError = UnexpectedToken String Int String String
@@ -22,24 +22,16 @@ instance Tracable SyntaxAnalyserError where
         "The interpreter was expecting " ++ b ++ ", but what found was " ++ a ++ "."
     cause (UnexpectedEOF _ _)       = ""
 
-data LispSyntax = IdentifierRef Int String
-                | NumberRef Int Int
-                | StringRef Int String
-                | BoolRef Int Bool
-                | InstantList Int [LispSyntax]
-                | LazyList Int [LispSyntax]
-                deriving (Eq, Show)
-
 data State = ExpectingOpenParenthesesOrSingleQuote
            | ExpectingOpenParentheses 
-           | MakingInstantList Int [LispSyntax]
-           | MakingLazyList Int [LispSyntax]
+           | MakingInstantList Int [Syntax]
+           | MakingLazyList Int [Syntax]
 
-syntaxAnalyse :: String -> [Token] -> Either SyntaxAnalyserError [LispSyntax]
+syntaxAnalyse :: String -> [Token] -> Either SyntaxAnalyserError [Syntax]
 syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
     where
-        topLevel :: State -> Int -> [LispSyntax] ->
-                    Either SyntaxAnalyserError [LispSyntax]
+        topLevel :: State -> Int -> [Syntax] ->
+                    Either SyntaxAnalyserError [Syntax]
         topLevel state index determined | index >= length tokens =
             case state of
                 ExpectingOpenParenthesesOrSingleQuote ->
@@ -85,14 +77,14 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                                 (determined ++ [program])
                 )
 
-        secondLevel :: State -> Int -> Either SyntaxAnalyserError (Int, LispSyntax)
+        secondLevel :: State -> Int -> Either SyntaxAnalyserError (Int, Syntax)
         secondLevel _ index | index >= length tokens =
             Left $ UnexpectedEOF src 0
         
         secondLevel ExpectingOpenParenthesesOrSingleQuote index =
             case tokens !! index of
-                (OpenParentheses _) ->
-                    secondLevel (MakingInstantList index []) (index + 1)
+                (OpenParentheses n) ->
+                    secondLevel (MakingInstantList n []) (index + 1)
 
                 (SingleQuote _) ->
                     secondLevel ExpectingOpenParentheses (index + 1)
@@ -102,8 +94,8 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
         
         secondLevel ExpectingOpenParentheses index =
             case tokens !! index of
-                (OpenParentheses _) ->
-                    secondLevel (MakingLazyList (index - 1) []) (index + 1)
+                (OpenParentheses n) ->
+                    secondLevel (MakingLazyList (n - 1) []) (index + 1)
 
                 t ->
                     unexpectedToken t "'('"
