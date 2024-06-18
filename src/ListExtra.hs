@@ -1,4 +1,9 @@
-module ListExtra ((!?), replaceFirst, isPrimitive) where
+module ListExtra
+    ( (!?)
+    , replaceFirst
+    , isPrimitive
+    , isEverythingSame
+    ) where
 
 import Data.List (elemIndices)
 
@@ -7,7 +12,12 @@ import Data.List (elemIndices)
           | otherwise      = Just (xs !! i)
 
 isPrimitive :: Eq a => [a] -> Bool
+isPrimitive [] = True
 isPrimitive xs = all (((< 2) . length) . (`elemIndices` xs)) xs
+
+isEverythingSame :: Eq a => [a] -> Bool
+isEverythingSame [] = True
+isEverythingSame xs = all (head xs ==) xs
 
 replaceFirst :: Eq a => [a] -> [a] -> [a] -> [a]
 replaceFirst [] _ _ = []
