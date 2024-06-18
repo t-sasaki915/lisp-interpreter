@@ -3,6 +3,7 @@ module LispRunner (runLisp) where
 import LispData (LispState(..))
 import LispError (LispError(..))
 import LispInterpreter (translate, evaluate)
+import LispPredef (lispPredefinedFunctions)
 import Syntax (Syntax(..))
 
 runLisp :: [Syntax] -> IO (Either LispError ())
@@ -28,4 +29,4 @@ runLisp program = do
         Left err ->
             return $ Left err
 
-    where initState = LispState [] [] []
+    where initState = LispState lispPredefinedFunctions [] []

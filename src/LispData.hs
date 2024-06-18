@@ -22,7 +22,7 @@ data LispData = LispString Int String
               | LispVariable Int String LispData
               | LispVariableBind Int String
               | LispIdentifier Int String
-              | LispFunction Int String ([LispData] -> LispState ->
+              | LispFunction Int String (Int -> LispState -> [LispData] ->
                              IO (Either LispError (LispState, LispData)))
 
 data LispState = LispState

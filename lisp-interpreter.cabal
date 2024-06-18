@@ -28,6 +28,7 @@ library
       LispData
       LispError
       LispInterpreter
+      LispPredef
       LispRunner
       ListExtra
       Syntax

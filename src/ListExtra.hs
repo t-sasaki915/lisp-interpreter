@@ -1,8 +1,13 @@
-module ListExtra ((!?), replaceFirst) where
+module ListExtra ((!?), replaceFirst, isPrimitive) where
+
+import Data.List (elemIndices)
 
 (!?) :: [a] -> Int -> Maybe a
 (!?) xs i | i >= length xs = Nothing
           | otherwise      = Just (xs !! i)
+
+isPrimitive :: Eq a => [a] -> Bool
+isPrimitive xs = all (((< 2) . length) . (`elemIndices` xs)) xs
 
 replaceFirst :: Eq a => [a] -> [a] -> [a] -> [a]
 replaceFirst [] _ _ = []

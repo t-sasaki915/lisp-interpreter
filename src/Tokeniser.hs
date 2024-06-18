@@ -130,6 +130,8 @@ tokenise' state character =
         considerIdentifierOrNumber :: Int -> String -> Either TokeniserError Token
         considerIdentifierOrNumber n (x : xs) | x `elem` numbers =
             case x : xs of
+                "1+" -> Right $ Identifier n "1+"
+                "1-" -> Right $ Identifier n "1-"
                 str | str == str =~ "([0-9]{1,}.)?[0-9]{1,}" -> Right $ Number n str
                 _ -> Left $ InvalidNumberFormat n (x : xs)
             where numbers = map (head . show) ([0..9] :: [Int])

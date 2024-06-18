@@ -55,8 +55,8 @@ evaluate state =
                             return $
                                 Right (st, dt ++ [LispList n []])
 
-                        (LispList _ [LispFunction _ _ prog]) -> do
-                            res <- prog [] st
+                        (LispList n [LispFunction _ _ prog]) -> do
+                            res <- prog n st []
                             case res of
                                 Right (st', d) ->
                                     return $ Right (st', dt ++ [d])
@@ -64,8 +64,8 @@ evaluate state =
                                 Left err ->
                                     return $ Left err
 
-                        (LispList _ (LispFunction _ _ prog : args)) -> do
-                            res <- prog args st
+                        (LispList n (LispFunction _ _ prog : args)) -> do
+                            res <- prog n st args
                             case res of
                                 Right (st', d) ->
                                     return $ Right (st', dt ++ [d])
@@ -73,10 +73,10 @@ evaluate state =
                                 Left err ->
                                     return $ Left err
 
-                        (LispList _ [LispIdentifier n lb]) ->
+                        (LispList n' [LispIdentifier n lb]) ->
                             case find (funcFilt lb) (_functions st) of
                                 Just (LispFunction _ _ prog) -> do
-                                    res <- prog [] st
+                                    res <- prog n' st []
                                     case res of
                                         Right (st', d) ->
                                             return $ Right (st', dt ++ [d])
@@ -87,10 +87,10 @@ evaluate state =
                                 _ ->
                                     return $ Left (UndefinedFunction n lb)
 
-                        (LispList _ (LispIdentifier n lb : args)) ->
+                        (LispList n' (LispIdentifier n lb : args)) ->
                             case find (funcFilt lb) (_functions st) of
                                 Just (LispFunction _ _ prog) -> do
-                                    res <- prog args st
+                                    res <- prog n' st args
                                     case res of
                                         Right (st', d) ->
                                             return $ Right (st', dt ++ [d])
