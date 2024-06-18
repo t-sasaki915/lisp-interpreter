@@ -7,28 +7,28 @@ import ErrorTrace (Tracable(..))
 import Syntax (Syntax(..))
 import Token (Token(..), tokenIndex, tokenLetter)
 
-data SyntaxAnalyserError = UnexpectedToken String Int String String
-                         | UnexpectedEOF String Int
+data SyntaxAnalyserError = UnexpectedToken Int String String
+                         | UnexpectedEOF Int
                          deriving (Eq, Show)
 
 instance Tracable SyntaxAnalyserError where
-    place (UnexpectedToken a b _ _) = (a, b)
-    place (UnexpectedEOF a b)       = (a, b)
+    place (UnexpectedToken a _ _) = a
+    place (UnexpectedEOF a)       = a
 
-    title (UnexpectedToken {})      = "Unexpected token"
-    title (UnexpectedEOF {})        = "Unexpected end of file"
+    title (UnexpectedToken {})    = "Unexpected token"
+    title (UnexpectedEOF {})      = "Unexpected end of file"
 
-    cause (UnexpectedToken _ _ a b) =
+    cause (UnexpectedToken _ a b) =
         "The interpreter was expecting " ++ b ++ ", but what found was " ++ a ++ "."
-    cause (UnexpectedEOF _ _)       = ""
+    cause (UnexpectedEOF _)       = ""
 
 data State = ExpectingOpenParenthesesOrSingleQuote
            | ExpectingOpenParentheses 
            | MakingInstantList Int [Syntax]
            | MakingLazyList Int [Syntax]
 
-syntaxAnalyse :: String -> [Token] -> Either SyntaxAnalyserError [Syntax]
-syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
+syntaxAnalyse :: [Token] -> Either SyntaxAnalyserError [Syntax]
+syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
     where
         topLevel :: State -> Int -> [Syntax] ->
                     Either SyntaxAnalyserError [Syntax]
@@ -38,7 +38,7 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                     Right determined
 
                 _ ->
-                    Left $ UnexpectedEOF src 0
+                    Left $ UnexpectedEOF 0
         
         topLevel ExpectingOpenParenthesesOrSingleQuote index determined =
             case tokens !! index of
@@ -79,7 +79,7 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
 
         secondLevel :: State -> Int -> Either SyntaxAnalyserError (Int, Syntax)
         secondLevel _ index | index >= length tokens =
-            Left $ UnexpectedEOF src 0
+            Left $ UnexpectedEOF 0
         
         secondLevel ExpectingOpenParenthesesOrSingleQuote index =
             case tokens !! index of
@@ -183,4 +183,4 @@ syntaxAnalyse src tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                     Right (index, LazyList n elems)
 
         unexpectedToken t e =
-            Left $ UnexpectedToken src (tokenIndex t) (tokenLetter t) e
+            Left $ UnexpectedToken (tokenIndex t) (tokenLetter t) e

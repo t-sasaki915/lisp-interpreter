@@ -70,9 +70,9 @@ tokeniserTest2 = tokeniserTest
 tokeniserTest3 :: Test
 tokeniserTest3 = tokeniserTest
     "(\"aaa)"
-    (Left $ UnexpectedEOF "(\"aaa)" 0)
+    (Left $ UnexpectedEOF 0)
 
 tokeniserTest4 :: Test
 tokeniserTest4 = tokeniserTest
     "'(1 2 3a)"
-    (Left $ InvalidNumberFormat "'(1 2 3a)" 7 "3a")
+    (Left $ InvalidNumberFormat 7 "3a")

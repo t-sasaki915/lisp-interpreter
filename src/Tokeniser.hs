@@ -5,19 +5,19 @@ import Token (Token(..))
 
 import Text.Regex.Posix ((=~))
 
-data TokeniserError = InvalidNumberFormat String Int String
-                    | UnexpectedEOF String Int
+data TokeniserError = InvalidNumberFormat Int String
+                    | UnexpectedEOF Int
                     deriving (Show, Eq)
 
 instance Tracable TokeniserError where
-    place (InvalidNumberFormat a b _) = (a, b)
-    place (UnexpectedEOF a b)         = (a, b)
+    place (InvalidNumberFormat a _) = a
+    place (UnexpectedEOF a)         = a
 
-    title (InvalidNumberFormat {})    = "Invalid number format"
-    title (UnexpectedEOF {})          = "Unexpected end of file"
+    title (InvalidNumberFormat {})  = "Invalid number format"
+    title (UnexpectedEOF {})        = "Unexpected end of file"
 
-    cause (InvalidNumberFormat _ _ a) = a
-    cause (UnexpectedEOF {})          = ""
+    cause (InvalidNumberFormat _ a) = a
+    cause (UnexpectedEOF _)         = ""
 
 data Status = ExpectingCharacter
             | BufferingIdentifierOrNumber String
@@ -28,18 +28,18 @@ type Result = Either TokeniserError [Token]
 
 tokenise :: String -> Result
 tokenise src =
-    case foldl (tokenise' src) (Right [], ExpectingCharacter) (zip [0..] src) of
+    case foldl tokenise' (Right [], ExpectingCharacter) (zip [0..] src) of
         (Right tokens, ExpectingCharacter) ->
             Right tokens
 
         (Right _, _) ->
-            Left $ UnexpectedEOF src 0
+            Left $ UnexpectedEOF 0
 
         (Left err, _) ->
             Left err
 
-tokenise' :: String -> (Result, Status) -> (Int, Char) -> (Result, Status)
-tokenise' src state character =
+tokenise' :: (Result, Status) -> (Int, Char) -> (Result, Status)
+tokenise' state character =
     case state of
         (Left _, _) -> state
         (Right tokens, ExpectingCharacter) ->
@@ -131,7 +131,7 @@ tokenise' src state character =
         considerIdentifierOrNumber n (x : xs) | x `elem` numbers =
             case x : xs of
                 str | str == str =~ "([0-9]{1,}.)?[0-9]{1,}" -> Right $ Number n str
-                _ -> Left $ InvalidNumberFormat src n (x : xs)
+                _ -> Left $ InvalidNumberFormat n (x : xs)
             where numbers = map (head . show) ([0..9] :: [Int])
 
         considerIdentifierOrNumber n buffer =

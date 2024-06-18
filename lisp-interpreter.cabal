@@ -25,9 +25,9 @@ source-repository head
 library
   exposed-modules:
       ErrorTrace
-      Lisp
       LispData
       LispError
+      LispInterpreter
       LispRunner
       ListExtra
       Syntax

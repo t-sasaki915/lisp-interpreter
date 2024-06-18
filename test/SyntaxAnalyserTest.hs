@@ -12,7 +12,7 @@ syntaxAnalyserTest :: String -> Either SyntaxAnalyserError [Syntax] -> Test
 syntaxAnalyserTest src res =
     case tokenise src of
         Right tokens ->
-            TestCase $ assertEqual "" (syntaxAnalyse src tokens) res
+            TestCase $ assertEqual "" (syntaxAnalyse tokens) res
 
         Left _ ->
             TestCase $ assertEqual "" True False
@@ -112,9 +112,9 @@ syntaxAnalyserTest3 = syntaxAnalyserTest
 syntaxAnalyserTest4 :: Test
 syntaxAnalyserTest4 = syntaxAnalyserTest
     "(1))"
-    (Left $ UnexpectedToken "(1))" 3 "')'" "'(' or '''")
+    (Left $ UnexpectedToken 3 "')'" "'(' or '''")
 
 syntaxAnalyserTest5 :: Test
 syntaxAnalyserTest5 = syntaxAnalyserTest
     "(1 "
-    (Left $ UnexpectedEOF "(1 " 0)
+    (Left $ UnexpectedEOF 0)

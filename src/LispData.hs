@@ -1,27 +1,77 @@
-module LispData (LispData(..), LispState(..)) where
+{-# LANGUAGE LambdaCase #-}
+
+module LispData
+    ( LispData(..)
+    , LispState(..)
+    , lispDataIndex
+    , varFilt
+    , varBindFilt
+    , funcFilt
+    , lispNumberRawData
+    , lispStringRawData
+    , lispBoolRawData
+    ) where
 
 import LispError (LispError(..))
-import Syntax (Syntax(..))
 
 data LispData = LispString Int String
               | LispNumber Int Int
               | LispBool Int Bool
-              | LispList Int [Syntax]
-              | LispLazyList Int [Syntax]
+              | LispList Int [LispData]
+              | LispLazyList Int [LispData]
               | LispVariable Int String LispData
               | LispVariableBind Int String
+              | LispIdentifier Int String
               | LispFunction Int String ([LispData] -> LispState ->
                              IO (Either LispError (LispState, LispData)))
-              | LispSyntax Int String ([Syntax] -> LispState ->
-                           IO (Either LispError (LispState, LispData)))
 
 data LispState = LispState
-    { _syntaxes       :: [LispData]
-    , _functions      :: [LispData]
+    { _functions      :: [LispData]
     , _variables      :: [LispData]
     , _localVariables :: [LispData]
     }
     deriving (Eq, Show)
+
+lispDataIndex :: LispData -> Int
+lispDataIndex (LispString n _)       = n
+lispDataIndex (LispNumber n _)       = n
+lispDataIndex (LispBool n _)         = n
+lispDataIndex (LispList n _)         = n
+lispDataIndex (LispLazyList n _)     = n
+lispDataIndex (LispVariable n _ _)   = n
+lispDataIndex (LispVariableBind n _) = n
+lispDataIndex (LispIdentifier n _)   = n
+lispDataIndex (LispFunction n _ _)   = n
+
+varFilt :: String -> LispData -> Bool
+varFilt name =
+    \case (LispVariable _ n _) -> n == name
+          _                    -> False
+
+varBindFilt :: String -> LispData -> Bool
+varBindFilt name =
+    \case (LispVariableBind _ n) -> n == name
+          _                      -> False
+
+funcFilt :: String -> LispData -> Bool
+funcFilt name =
+    \case (LispFunction _ n _) -> n == name
+          _                    -> False
+
+lispNumberRawData :: LispData -> Either LispError Int
+lispNumberRawData =
+    \case (LispNumber _ x) -> Right x
+          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Number"
+
+lispStringRawData :: LispData -> Either LispError String
+lispStringRawData =
+    \case (LispString _ s) -> Right s
+          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "String"
+
+lispBoolRawData :: LispData -> Either LispError Bool
+lispBoolRawData =
+    \case (LispBool _ b) -> Right b
+          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Bool"
 
 instance Show LispData where
     show (LispString _ s) =
@@ -40,10 +90,10 @@ instance Show LispData where
         l ++ " := " ++ show d
     show (LispVariableBind _ l) =
         l ++ " := ???"
+    show (LispIdentifier _ i) =
+        "identifier \"" ++ i ++ "\""
     show (LispFunction _ l _) =
         "function \"" ++ l ++ "\""
-    show (LispSyntax _ l _) =
-        "syntax \"" ++ l ++ "\""
 
 instance Eq LispData where
     (==) (LispString n1 s1) (LispString n2 s2) =
@@ -60,9 +110,9 @@ instance Eq LispData where
         n1 == n2 && l1 == l2 && d1 == d2
     (==) (LispVariableBind n1 l1) (LispVariableBind n2 l2) =
         n1 == n2 && l1 == l2
+    (==) (LispIdentifier n1 i1) (LispIdentifier n2 i2) =
+        n1 == n2 && i1 == i2
     (==) (LispFunction n1 l1 _) (LispFunction n2 l2 _) =
-        n1 == n2 && l1 == l2
-    (==) (LispSyntax n1 l1 _) (LispSyntax n2 l2 _) =
         n1 == n2 && l1 == l2
     (==) _ _ =
         False

@@ -16,20 +16,20 @@ main = do
         Right source ->
             case tokenise source of
                 Right tokens ->
-                    case syntaxAnalyse source tokens of
+                    case syntaxAnalyse tokens of
                         Right program -> do
-                            result <- runLisp source program
+                            result <- runLisp program
                             case result of
                                 Right () ->
                                     return ()
                                     
                                 Left err ->
-                                    putStrLn $ traceError err
+                                    putStrLn $ traceError err source
                         
                         Left err ->
-                            putStrLn $ traceError err
+                            putStrLn $ traceError err source
                 
                 Left err ->
-                    putStrLn $ traceError err
+                    putStrLn $ traceError err source
         Left err ->
             print err
