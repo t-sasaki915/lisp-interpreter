@@ -32,7 +32,7 @@ lispSimpleFunction name prog = LispFunction (-1) name prog'
 lispMultiplication :: LispFuncProg
 lispMultiplication ind st args =
     sequence $
-        mapM lispNumberRawData args >>=
+        mapM expectNumber args >>=
             (\case
                 [] -> Right $ return (st, LispNumber ind 1)
                 xs -> Right $ return (st, LispNumber ind (product xs))
@@ -41,7 +41,7 @@ lispMultiplication ind st args =
 lispAddition :: LispFuncProg
 lispAddition ind st args =
     sequence $
-        mapM lispNumberRawData args >>=
+        mapM expectNumber args >>=
             (\case
                 [] -> Right $ return (st, LispNumber ind 0)
                 xs -> Right $ return (st, LispNumber ind (sum xs))
@@ -50,7 +50,7 @@ lispAddition ind st args =
 lispSubtraction :: LispFuncProg
 lispSubtraction ind st args =
     sequence $
-        mapM lispNumberRawData args >>=
+        mapM expectNumber args >>=
             (\case
                 []  -> Left $ TooFewArguments ind 1
                 [x] -> Right $ return (st, LispNumber ind (negate x))
@@ -60,7 +60,7 @@ lispSubtraction ind st args =
 lispDivision :: LispFuncProg
 lispDivision ind st args =
     sequence $
-        mapM lispNumberRawData args >>=
+        mapM expectNumber args >>=
             (\case
                 []  -> Left $ TooFewArguments ind 1
                 [x] -> Right $ return (st, LispNumber ind (1 `div` x))
@@ -70,7 +70,7 @@ lispDivision ind st args =
 lispNotEqual :: LispFuncProg
 lispNotEqual ind st args =
     sequence $
-        mapM lispNumberRawData args >>=
+        mapM expectNumber args >>=
             (\case
                 []  -> Left $ TooFewArguments ind 1
                 xs  -> Right $ return (st, LispBool ind (isPrimitive xs))
@@ -83,7 +83,7 @@ lispOnePlus ind _ args | null args =
     return $ Left (TooFewArguments ind 1)
 lispOnePlus ind st args =
     sequence $
-        lispNumberRawData (head args) >>=
+        expectNumber (head args) >>=
             (\x -> Right $ return (st, LispNumber ind (x + 1)))
 
 lispOneMinus :: LispFuncProg
@@ -93,5 +93,5 @@ lispOneMinus ind _ args | null args =
     return $ Left (TooFewArguments ind 1)
 lispOneMinus ind st args =
     sequence $
-        lispNumberRawData (head args) >>=
+        expectNumber (head args) >>=
             (\x -> Right $ return (st, LispNumber ind (x - 1)))

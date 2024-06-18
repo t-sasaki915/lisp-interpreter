@@ -7,9 +7,9 @@ module LispData
     , varFilt
     , varBindFilt
     , funcFilt
-    , lispNumberRawData
-    , lispStringRawData
-    , lispBoolRawData
+    , expectNumber
+    , expectString
+    , expectBool
     ) where
 
 import LispError (LispError(..))
@@ -58,18 +58,18 @@ funcFilt name =
     \case (LispFunction _ n _) -> n == name
           _                    -> False
 
-lispNumberRawData :: LispData -> Either LispError Int
-lispNumberRawData =
+expectNumber :: LispData -> Either LispError Int
+expectNumber =
     \case (LispNumber _ x) -> Right x
           d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Number"
 
-lispStringRawData :: LispData -> Either LispError String
-lispStringRawData =
+expectString :: LispData -> Either LispError String
+expectString =
     \case (LispString _ s) -> Right s
           d -> Left $ TypeMismatch (lispDataIndex d) (show d) "String"
 
-lispBoolRawData :: LispData -> Either LispError Bool
-lispBoolRawData =
+expectBool :: LispData -> Either LispError Bool
+expectBool =
     \case (LispBool _ b) -> Right b
           d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Bool"
 
