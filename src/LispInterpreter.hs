@@ -6,6 +6,7 @@ import LispData
 import LispError (LispError(..))
 import Syntax (Syntax(..))
 
+import Control.Lens (set)
 import Control.Monad (foldM)
 import Data.Maybe (fromMaybe)
 import Data.List (find)
@@ -55,48 +56,24 @@ evaluate state =
                             return $
                                 Right (st, dt ++ [LispList n []])
 
-                        (LispList n [LispFunction _ _ prog]) -> do
-                            res <- prog n st []
-                            case res of
-                                Right (st', d) ->
-                                    return $ Right (st', dt ++ [d])
+                        (LispList n [LispFunction _ _ prog]) ->
+                            evalList dt prog n st []
 
-                                Left err ->
-                                    return $ Left err
-
-                        (LispList n (LispFunction _ _ prog : args)) -> do
-                            res <- prog n st args
-                            case res of
-                                Right (st', d) ->
-                                    return $ Right (st', dt ++ [d])
-
-                                Left err ->
-                                    return $ Left err
+                        (LispList n (LispFunction _ _ prog : args)) ->
+                            evalList dt prog n st args
 
                         (LispList n' [LispIdentifier n lb]) ->
                             case find (funcFilt lb) (_functions st) of
-                                Just (LispFunction _ _ prog) -> do
-                                    res <- prog n' st []
-                                    case res of
-                                        Right (st', d) ->
-                                            return $ Right (st', dt ++ [d])
-
-                                        Left err ->
-                                            return $ Left err
+                                Just (LispFunction _ _ prog) ->
+                                    evalList dt prog n' st []
 
                                 _ ->
                                     return $ Left (UndefinedFunction n lb)
 
                         (LispList n' (LispIdentifier n lb : args)) ->
                             case find (funcFilt lb) (_functions st) of
-                                Just (LispFunction _ _ prog) -> do
-                                    res <- prog n' st args
-                                    case res of
-                                        Right (st', d) ->
-                                            return $ Right (st', dt ++ [d])
-
-                                        Left err ->
-                                            return $ Left err
+                                Just (LispFunction _ _ prog) ->
+                                    evalList dt prog n' st args
 
                                 _ ->
                                     return $ Left (UndefinedFunction n lb)
@@ -177,3 +154,17 @@ evaluate state =
                                                     return $ Left undefErr
         )
         (Right (state, []))
+    where
+        evalList dt prog ind st args =
+            let plvars = _localVariables st in
+            do  res <- prog ind st args
+                case res of
+                    Right (st', d) ->
+                        return $
+                            Right
+                                ( set localVariables plvars st'
+                                , dt ++ [d]
+                                )
+                    
+                    Left err ->
+                        return $ Left err
