@@ -5,10 +5,15 @@ module Lisp
     ( LispError(..)
     , LispData(..)
     , LispState(..)
+    , lispPredefinedSyntaxes
     , lispPredefinedFunctions
+    , parseSyntax
+    , parseSyntaxes
     ) where
 
 import ListExtra ((!?), replaceFirst)
+import SyntaxAnalyser (LispSyntax(..))
+import Token (Token(..), tokenLetter)
 
 import Control.Lens
 import Control.Monad (foldM)
@@ -19,6 +24,7 @@ data LispError = UndefinedIdentifier String
                | InvalidUsageOfFunction String
                | FormatError String String
                | InvalidToken String
+               | IdentifierConfliction String
                | InvalidProgramFormat
                | EmptyExecList
                deriving (Eq, Show)
@@ -27,38 +33,222 @@ data LispData = LispString String
               | LispNumber Int
               | LispBool Bool
               | LispList [LispData]
+              | LispLazyList LispData [LispSyntax]
               | LispVariable String LispData
               | LispVariableBind String
               | LispFunction String ([LispData] -> LispState ->
                              IO (Either LispError (LispState, LispData)))
+              | LispProgramSyntax String ([LispSyntax] -> LispState ->
+                                  IO (Either LispError (LispState, LispData)))
 
 instance Eq LispData where
-    (==) (LispString s1) (LispString s2)             = s1 == s2
-    (==) (LispNumber n1) (LispNumber n2)             = n1 == n2
-    (==) (LispBool b1) (LispBool b2)                 = b1 == b2
-    (==) (LispList l1) (LispList l2)                 = l1 == l2
-    (==) (LispVariable n1 d1) (LispVariable n2 d2)   = n1 == n2 && d1 == d2
-    (==) (LispVariableBind n1) (LispVariableBind n2) = n1 == n2
-    (==) (LispFunction n1 _) (LispFunction n2 _)     = n1 == n2
-    (==) _ _                                         = False
+    (==) (LispString s1) (LispString s2)                   = s1 == s2
+    (==) (LispNumber n1) (LispNumber n2)                   = n1 == n2
+    (==) (LispBool b1) (LispBool b2)                       = b1 == b2
+    (==) (LispList l1) (LispList l2)                       = l1 == l2
+    (==) (LispLazyList s1 l1) (LispLazyList s2 l2)         = s1 == s2 && l1 == l2
+    (==) (LispVariable n1 d1) (LispVariable n2 d2)         = n1 == n2 && d1 == d2
+    (==) (LispVariableBind n1) (LispVariableBind n2)       = n1 == n2
+    (==) (LispFunction n1 _) (LispFunction n2 _)           = n1 == n2
+    (==) (LispProgramSyntax n1 _) (LispProgramSyntax n2 _) = n1 == n2
+    (==) _ _                                               = False
 
 instance Show LispData where
-    show (LispString a)       = "\"" ++ a ++ "\""
-    show (LispNumber a)       = show a
-    show (LispBool True)      = "t"
-    show (LispBool False)     = "nil"
-    show (LispList as)        = "'(" ++ unwords (map show as) ++ ")"
-    show (LispVariable a _)   = a
-    show (LispVariableBind a) = a
-    show (LispFunction a _)   = a
+    show (LispString a)          = "\"" ++ a ++ "\""
+    show (LispNumber a)          = show a
+    show (LispBool True)         = "t"
+    show (LispBool False)        = "nil"
+    show (LispList as)           = "'(" ++ unwords (map show as) ++ ")"
+    show (LispLazyList s as)     = "'(" ++ unwords (show s : map show as) ++ ")"
+    show (LispVariable a _)      = a
+    show (LispVariableBind a)    = a
+    show (LispFunction a _)      = a
+    show (LispProgramSyntax a _) = a
 
 data LispState = LispState
-    { _functions      :: [LispData]
-    , _variables      :: [LispData]
+    { _syntaxes  :: [LispData]
+    , _functions :: [LispData]
+    , _variables :: [LispData]
     }
     deriving (Eq, Show)
 
 makeLenses ''LispState
+
+parseSyntaxes :: LispState -> [LispSyntax]-> IO (Either LispError (LispState, [LispData]))
+parseSyntaxes state =
+    foldM
+        (\state' syn ->
+            case state' of
+                (Left _) -> return state'
+                (Right (st, lst)) -> do
+                    result <- parseSyntax st syn
+                    case result of
+                        Right (newState, value) ->
+                            return $ Right (newState, lst ++ [value])
+
+                        Left err ->
+                            return $ Left err
+        )
+        (Right (state, []))
+
+parseSyntax :: LispState -> LispSyntax -> IO (Either LispError (LispState, LispData))
+parseSyntax state =
+    \case
+        (RawList [VarValue (Identifier n var)]) ->
+            case find (syntaxMatch var) (_syntaxes state) of
+                Just s ->
+                    return $ Right (state, LispLazyList s [])
+
+                Nothing -> do
+                    result <- parseSyntaxes state [VarValue (Identifier n var)]
+                    case result of
+                        Right (newState, lst') ->
+                            return $ Right (newState, LispList lst')
+
+                        Left err ->
+                            return $ Left err
+
+        (RawList (VarValue (Identifier n var) : args)) ->
+            case find (syntaxMatch var) (_syntaxes state) of
+                Just s ->
+                    return $ Right (state, LispLazyList s args)
+
+                Nothing -> do
+                    result <- parseSyntaxes state (VarValue (Identifier n var) : args)
+                    case result of
+                        Right (newState, lst') ->
+                            return $ Right (newState, LispList lst')
+
+                        Left err ->
+                            return $ Left err
+
+        (RawList lst) -> do
+            result <- parseSyntaxes state lst
+            case result of
+                Right (newState, lst') ->
+                    return $ Right (newState, LispList lst')
+
+                Left err ->
+                    return $ Left err
+
+        (ExecList []) ->
+            return $ Left EmptyExecList
+
+        (ExecList [VarValue (Identifier _ var)]) ->
+            case find (syntaxMatch var) (_syntaxes state) of
+                Just (LispProgramSyntax _ prog) -> do
+                    result <- prog [] state
+                    case result of
+                        Right (newState, value) ->
+                            return $ Right (newState, value)
+
+                        Left err ->
+                            return $ Left err
+
+                _ ->
+                    case find (functionMatch var) (_functions state) of
+                        Just (LispFunction _ prog) -> do
+                            result <- prog [] state
+                            case result of
+                                Right (newState, value) ->
+                                    return $ Right (newState, value)
+
+                                Left err ->
+                                    return $ Left err
+
+                        _ ->
+                            return $ Left (UndefinedIdentifier var)
+
+        (ExecList (VarValue (Identifier _ var) : args)) ->
+            case find (syntaxMatch var) (_syntaxes state) of
+                Just (LispProgramSyntax _ prog) -> do
+                    result <- prog args state
+                    case result of
+                        Right (newState, value) ->
+                            return $ Right (newState, value)
+
+                        Left err ->
+                            return $ Left err
+
+                _ ->
+                    case find (functionMatch var) (_functions state) of
+                        Just (LispFunction _ prog) -> do
+                            result <- parseSyntaxes state args
+                            case result of
+                                Right (newState, args') -> do
+                                    result2 <- prog args' newState
+                                    case result2 of
+                                        Right (newState', value) ->
+                                            return $ Right (newState', value)
+
+                                        Left err ->
+                                            return $ Left err
+                                Left err ->
+                                    return $ Left err
+
+                        _ ->
+                            return $ Left (UndefinedIdentifier var)
+
+        (NumValue (Number _ n)) ->
+            return $ Right (state, LispNumber (read n))
+
+        (StrValue (StringLiteral _ s)) ->
+            return $ Right (state, LispString s)
+
+        (BoolValue (BoolLiteral _ "t")) ->
+            return $ Right (state, LispBool True)
+
+        (BoolValue (BoolLiteral _ "nil")) ->
+            return $ Right (state, LispBool False)
+
+        (VarValue (Identifier _ var)) ->
+            case find (syntaxMatch var) (_syntaxes state) of
+                Just f ->
+                    return $ Right (state, f)
+
+                Nothing ->
+                    case find (functionMatch var) (_functions state) of
+                        Just f ->
+                            return $ Right (state, f)
+
+                        Nothing ->
+                            case find (variableMatch var) (_variables state) of
+                                Just (LispVariable _ v) ->
+                                    return $ Right (state, v)
+
+                                Just f ->
+                                    return $ Right (state, f)
+
+                                Nothing ->
+                                    return $ Left (UndefinedIdentifier var)
+
+        (NumValue t) ->
+            return $ Left (InvalidToken (tokenLetter t))
+
+        (StrValue t) ->
+            return $ Left (InvalidToken (tokenLetter t))
+
+        (BoolValue t) ->
+            return $ Left (InvalidToken (tokenLetter t))
+
+        (VarValue t) ->
+            return $ Left (InvalidToken (tokenLetter t))
+
+        (ExecList _) ->
+            return $ Left InvalidProgramFormat
+    where
+        syntaxMatch n = \case (LispProgramSyntax name _) -> n == name
+                              _                          -> False
+        functionMatch n = \case (LispFunction name _) -> n == name
+                                _                     -> False
+        variableMatch n = \case (LispVariable name _)   -> n == name
+                                (LispVariableBind name) -> n == name
+                                _                       -> False
+
+lispPredefinedSyntaxes :: [LispData]
+lispPredefinedSyntaxes =
+    [ LispProgramSyntax "defun" lispDefun
+    ]
 
 lispPredefinedFunctions :: [LispData]
 lispPredefinedFunctions =
@@ -89,7 +279,6 @@ lispPredefinedFunctions =
     , LispFunction "reverse" lispReverse
     , LispFunction "format"  lispFormat
     , LispFunction "eval"    lispEval
-    , LispFunction "defun"   lispDefun
     ]
 
 invalidFuncUsage :: String -> LispState -> IO (Either LispError (LispState, LispData))
@@ -100,6 +289,8 @@ purely d state = return (Right (state, d))
 
 type LispFuncProg = [LispData] -> LispState ->
                     IO (Either LispError (LispState, LispData))
+type LispPSyntaxProg = [LispSyntax] -> LispState ->
+                       IO (Either LispError (LispState, LispData))
 
 lispAddition :: LispFuncProg
 lispAddition [LispNumber n1, LispNumber n2] = purely $ LispNumber (n1 + n2)
@@ -132,9 +323,10 @@ lispAbs [LispNumber n] = purely $ LispNumber (abs n)
 lispAbs _              = invalidFuncUsage "abs"
 
 lispListp :: LispFuncProg
-lispListp [LispList _] = purely $ LispBool True
-lispListp [_]          = purely $ LispBool False
-lispListp _            = invalidFuncUsage "listp"
+lispListp [LispList _]       = purely $ LispBool True
+lispListp [LispLazyList _ _] = purely $ LispBool True
+lispListp [_]                = purely $ LispBool False
+lispListp _                  = invalidFuncUsage "listp"
 
 lispAtom :: LispFuncProg
 lispAtom [LispString _] = purely $ LispBool True
@@ -144,8 +336,9 @@ lispAtom [_]            = purely $ LispBool False
 lispAtom _              = invalidFuncUsage "atom"
 
 lispNull :: LispFuncProg
-lispNull [LispList lst] = purely $ LispBool (null lst)
-lispNull _              = invalidFuncUsage "null"
+lispNull [LispList lst]     = purely $ LispBool (null lst)
+lispNull [LispLazyList _ _] = purely $ LispBool False
+lispNull _                  = invalidFuncUsage "null"
 
 lispEq :: LispFuncProg
 lispEq [a, b] = purely $ LispBool (a == b)
@@ -185,12 +378,21 @@ lispNot [LispBool b] = purely $ LispBool (not b)
 lispNot _            = invalidFuncUsage "not"
 
 lispCar :: LispFuncProg
-lispCar [LispList xs] = purely $ head xs
-lispCar _             = invalidFuncUsage "car"
+lispCar [LispList xs]      = purely $ head xs
+lispCar [LispLazyList x _] = purely x
+lispCar _                  = invalidFuncUsage "car"
 
 lispCdr :: LispFuncProg
-lispCdr [LispList xs] = purely $ LispList (drop 1 xs)
-lispCdr _             = invalidFuncUsage "cdr"
+lispCdr [LispList xs]       s = purely (LispList (drop 1 xs)) s
+lispCdr [LispLazyList _ xs] s = do
+    result <- parseSyntaxes s xs
+    case result of
+        Right (newState, returns) ->
+            return (Right (newState, LispList returns))
+
+        Left err ->
+            return (Left err)
+lispCdr _ s                   = invalidFuncUsage "cdr" s
 
 lispCons :: LispFuncProg
 lispCons [x, LispList xs] = purely $ LispList (x : xs)
@@ -372,48 +574,70 @@ lispFormat ((LispBool False) : (LispString str) : xs) s =
 lispFormat _ s = invalidFuncUsage "format" s
 
 lispEval :: LispFuncProg
-lispEval [LispList [LispFunction _ f]]        = f []
-lispEval [LispList (LispFunction _ f : args)] = f args
-lispEval _                                    = invalidFuncUsage "eval"
+lispEval [LispList [LispFunction _ f]]               = f []
+lispEval [LispList (LispFunction _ f : args)]        = f args
+lispEval [LispLazyList (LispProgramSyntax _ f) args] = f args
+lispEval _                                           = invalidFuncUsage "eval"
 
-lispDefun :: LispFuncProg
-lispDefun (LispVariableBind name : LispList args : progs) s =
-    return $
-        Right
-            ( over functions (++ [LispFunction name program]) s
-            , LispBool False
-            )
-    where
-        program :: LispFuncProg
-        program args' s' | length args /= length args' =
-            invalidFuncUsage name s'
-        program args' s' =
-            let
-                varsEither =
-                    mapM bindName args >>=
-                        (\a -> mapM (Right . uncurry LispVariable) (zip a args'))
-            in
-            case varsEither of
-                Right vars ->
-                    foldM
-                        (\state d ->
-                            case state of
-                                (Left _) -> return state
-                                (Right (s'', _)) ->
-                                    case d of
-                                        (LispList [LispFunction _ f]) ->
-                                            f [] s''
-
-                                        _ ->
-                                            return $ Right (s'', d)
+lispDefun :: LispPSyntaxProg
+lispDefun (VarValue (Identifier _ name) : ExecList args : progs) state =
+    sequence $
+        funcNameConflictionCheck >>=
+            const (mapM argLabel args) >>=
+                mapM argNameConflictionCheck >>=
+                    const
+                        ( Right $
+                            return
+                                ( over functions (++ [LispFunction name program]) state
+                                , LispBool False
+                                )
                         )
-                        (Right (over variables (++ vars) s', LispBool False))
-                        progs
+    where
+        funcNameConflictionCheck =
+            case find functionMatch (_functions state) of
+                Just _ ->
+                    Left $ IdentifierConfliction name
 
-                Left err ->
-                    return $ Left err
+                Nothing ->
+                    Right ()
 
-        bindName = \case (LispVariableBind a) -> Right a
-                         _ -> Left (InvalidUsageOfFunction "defun")
+        argNameConflictionCheck arg =
+            case find (variableMatch arg) (_variables state) of
+                Just _ ->
+                    Left $ IdentifierConfliction arg
+
+                Nothing ->
+                    Right ()
+
+        program :: LispFuncProg
+        program args' state' | length args' /= length args =
+            invalidFuncUsage name state'
+        program args' state' =
+            let
+                stateToUseOrErr =
+                    mapM argLabel args >>=
+                        (\a -> mapM (Right . uncurry LispVariable) (zip a args')) >>=
+                            (\b -> Right (over variables (++ b) state'))
+            in
+            case stateToUseOrErr of
+                Right stateWithArgs -> do
+                    res <- parseSyntaxes stateWithArgs progs
+                    case res of
+                        Right (newState, returns) ->
+                            return $ Right (newState, last returns)
+
+                        Left e ->
+                            return $ Left e
+                Left e ->
+                    return $ Left e
+
+        functionMatch = \case (LispFunction n _) -> n == name
+                              _                  -> False
+        variableMatch arg = \case (LispVariable n _)   -> n == arg
+                                  (LispVariableBind n) -> n == arg
+                                  _                    -> False
+        argLabel = \case (VarValue (Identifier _ label)) -> Right label
+                         _ -> Left $ InvalidUsageOfFunction "defun"
 
 lispDefun _ s = invalidFuncUsage "defun" s
+
