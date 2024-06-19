@@ -1,6 +1,4 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use mapM_" #-}
 {-# LANGUAGE LambdaCase #-}
 
 module LispPredefSyntax where
