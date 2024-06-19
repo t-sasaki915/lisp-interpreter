@@ -3,7 +3,6 @@
 
 module LispPredefSyntax where
 
-import ExceptExtra (exceptT)
 import LispData
 import LispError (LispError(..))
 import LispInterpreter (evaluateLisp)
@@ -24,33 +23,34 @@ lispPredefFuncsSyntax =
     ]
 
 lispDefun :: LispFuncProg
-lispDefun ind _ args | length args < 3 =
-    throwE $ TooFewArguments ind 3
-lispDefun ind st args = do
-    name   <- expectIdentifierT (head args)
-    argLst <- expectListT (args !! 1) >>= gatherArgs
-    st'    <- dropIntersect name st
-    return ( over
-                functions
-                (++ [ LispFunction
-                        ind
-                        name
-                        (program argLst (drop 2 args))
-                    ]
+lispDefun ind st args 
+    | length args < 3 = throwE (TooFewArguments ind 3)
+    | otherwise       = do
+        name   <- expectIdentifierT (head args)
+        argLst <- expectListT (args !! 1) >>= gatherArgs
+        st'    <- dropIntersect name st
+        return ( over
+                    functions
+                    (++ [ LispFunction
+                            ind
+                            name
+                            (program argLst (drop 2 args))
+                        ]
+                    )
+                    st'
+                , head args
                 )
-                st'
-            , head args
-            )
     where
-        program args' _ ind' _ args'' | length args' < length args'' =
-            throwE $ TooManyArguments ind' (length args')
-        program args' _ ind' _ args'' | length args' > length args'' =
-            throwE $ TooFewArguments ind' (length args')
-        program args' progs _ st' args'' = do
-            (st'', args''')  <- evaluateLisp st' args''
-            (st''', progs')  <- exceptT $ replaceArgs args' progs st'' args'''
-            (st'''', values) <- evaluateLisp st''' progs'
-            return (st'''', last values)
+        program args' progs ind' st' args''
+            | length args' < length args'' =
+                throwE (TooManyArguments ind' (length args'))
+            | length args' > length args'' =
+                throwE (TooFewArguments ind' (length args'))
+            | otherwise = do
+                (st'', args''')  <- evaluateLisp st' args''
+                (st''', progs')  <- replaceArgs args' progs st'' args'''
+                (st'''', values) <- evaluateLisp st''' progs'
+                return (st'''', last values)
 
         replaceArgs args' progs st' args'' = foldM
             (\(st'', progs') -> \case
@@ -89,29 +89,31 @@ lispDefun ind st args = do
             ) []
 
 lispEval :: LispFuncProg
-lispEval ind _ args | length args > 1 =
-    throwE $ TooManyArguments ind 1
-lispEval ind _ args | null args =
-    throwE $ TooFewArguments ind 1
-lispEval _ st args = do
-    (st', args') <- evaluateLisp st [head args]
-    let whatToEval = case last args' of
-                        (LispLazyList n lst) -> LispList n lst
-                        d -> d
-    (st'', vars) <- evaluateLisp st' [whatToEval]
-    return (st'', last vars)
+lispEval ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       = do
+        (st', args') <- evaluateLisp st [head args]
+        let
+            whatToEval =
+                case last args' of
+                    (LispLazyList n lst) -> LispList n lst
+                    d -> d
+        (st'', vars) <- evaluateLisp st' [whatToEval]
+        return (st'', last vars)
 
 lispIf :: LispFuncProg
-lispIf ind _ args | length args > 3 =
-    throwE $ TooManyArguments ind 3
-lispIf ind _ args | length args < 2 =
-    throwE $ TooFewArguments ind 2
-lispIf ind st args = do
-    (st', vars) <- evaluateLisp st [head args]
-    cond        <- expectBoolT (last vars)
-
-    let whatToEval = if cond then args !! 1
-                     else fromMaybe (LispBool ind False) (args !? 2)
-
-    (st'', vars') <- evaluateLisp st' [whatToEval]
-    return (st'', last vars')
+lispIf ind st args
+    | length args > 3 = throwE (TooManyArguments ind 3)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        (st', vars) <- evaluateLisp st [head args]
+        cond        <- expectBoolT (last vars)
+        let
+            whatToEval =
+                if cond then
+                    args !! 1
+                else
+                    fromMaybe (LispBool ind False) (args !? 2)
+        (st'', vars') <- evaluateLisp st' [whatToEval]
+        return (st'', last vars')

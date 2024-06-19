@@ -106,8 +106,9 @@ replace callIndex str cmds fills = foldM
     )
     (str, 0) cmds
     where
-        addIndent alt n | length alt >= n = alt
-        addIndent alt n = replicate (n - length alt) ' ' ++ alt
+        addIndent alt n
+            | length alt >= n = alt
+            | otherwise       = replicate (n - length alt) ' ' ++ alt
 
 lispFormatString :: Int -> LispData -> [LispData] -> Except LispError String
 lispFormatString callIndex (LispString n str) fills = do
