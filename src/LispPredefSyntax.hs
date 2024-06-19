@@ -10,7 +10,7 @@ import LispInterpreter (evaluateLisp)
 import LispPredefUtil (LispFuncProg)
 
 import Control.Lens (over)
-import Control.Monad.Trans.Except (Except, ExceptT, except, runExcept, throwE)
+import Control.Monad.Trans.Except (throwE)
 import Data.Maybe (fromMaybe)
 import Data.List (find)
 
@@ -18,9 +18,6 @@ lispPredefFuncsSyntax :: [LispData]
 lispPredefFuncsSyntax =
     [ LispFunction (-1) "defun" lispDefun
     ]
-
-aaa :: (Monad m) => Except a b -> ExceptT a m b 
-aaa = except . runExcept
 
 lispDefun :: LispFuncProg
 lispDefun ind _ args | length args < 3 =
