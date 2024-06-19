@@ -18,6 +18,7 @@ import Data.List (find)
 lispPredefFuncsSyntax :: [LispData]
 lispPredefFuncsSyntax =
     [ LispFunction (-1) "defun" lispDefun
+    , LispFunction (-1) "eval"  lispEval
     , LispFunction (-1) "if"    lispIf
     ]
 
@@ -65,6 +66,18 @@ lispDefun ind st args = do
                     (search name varFilt _localVariables)
                 )
                 (search name funcFilt _functions)
+
+lispEval :: LispFuncProg
+lispEval ind _ args | length args > 1 =
+    throwE $ TooManyArguments ind 1
+lispEval ind _ args | null args =
+    throwE $ TooFewArguments ind 1
+lispEval _ st args = do
+    let whatToEval = case head args of
+                        (LispLazyList n lst) -> LispList n lst
+                        d -> d
+    (st', vars) <- evaluateLisp st [whatToEval]
+    return (st', last vars)
 
 lispIf :: LispFuncProg
 lispIf ind _ args | length args > 3 =
