@@ -77,8 +77,10 @@ extractCommands' n str = foldM
 
                     Just (ShowDataCommand a b) ->
                         return
-                            ( cmds ++
-                                [(CmdOpt it' (Just (read buffer)), ShowDataCommand a b)]
+                            ( cmds ++ [
+                                ( CmdOpt it' (Just (read buffer))
+                                , ShowDataCommand a b
+                                )]
                             , WaitingForTilde
                             )
 

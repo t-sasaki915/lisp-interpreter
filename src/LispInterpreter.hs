@@ -12,7 +12,8 @@ import Control.Monad.Trans.Except (Except, ExceptT, throwE)
 import Data.Maybe (fromMaybe)
 import Data.List (find)
 
-translateSyntax :: LispState -> [Syntax] -> Except LispError (LispState, [LispData])
+translateSyntax :: LispState -> [Syntax] ->
+                   Except LispError (LispState, [LispData])
 translateSyntax state =
     foldM
         (\(st, dt) syntax ->
@@ -44,13 +45,14 @@ translateSyntax state =
         (state, [])
 
 
-evaluateLisp :: LispState -> [LispData] -> ExceptT LispError IO (LispState, [LispData])
+evaluateLisp :: LispState -> [LispData] ->
+                ExceptT LispError IO (LispState, [LispData])
 evaluateLisp state =
     foldM
         (\(st, dt) dat -> do
             case dat of
                 (LispList n []) ->
-                    return (st, dt ++ [LispList n []])
+                    return (st, dt ++ [LispBool n False])
 
                 (LispList n [LispFunction _ _ prog]) -> do
                     evalList dt prog n st []
@@ -80,6 +82,9 @@ evaluateLisp state =
                 (LispList _ (d : _)) ->
                     throwE $ UndefinedFunction (lispDataIndex d) (show d)
 
+                (LispLazyList n []) ->
+                    return (st, dt ++ [LispBool n False])
+
                 (LispLazyList n lst) ->
                     return (st, dt ++ [LispLazyList n lst])
 
@@ -102,8 +107,10 @@ evaluateLisp state =
                     let
                         search filt store = find (filt lb) (store st) >>=
                             (\case
-                                (LispVariable _ _ v) -> Just $ return (st, dt ++ [v])
-                                x -> Just $ return (st, dt ++ [x])
+                                (LispVariable _ _ v) ->
+                                    Just $ return (st, dt ++ [v])
+                                x ->
+                                    Just $ return (st, dt ++ [x])
                             )
                     in
                     fromMaybe

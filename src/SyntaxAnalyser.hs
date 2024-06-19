@@ -100,23 +100,28 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
             case tokens !! index of
                 (Identifier p t) ->
                     secondLevel
-                        (MakingInstantList (elems ++ [IdentifierRef p t])) (index + 1)
+                        (MakingInstantList (elems ++ [IdentifierRef p t]))
+                            (index + 1)
 
                 (Number p t) ->
                     secondLevel
-                        (MakingInstantList (elems ++ [NumberRef p (read t)])) (index + 1)
+                        (MakingInstantList (elems ++ [NumberRef p (read t)]))
+                            (index + 1)
 
                 (StringLiteral p t) ->
                     secondLevel
-                        (MakingInstantList (elems ++ [StringRef p t])) (index + 1)
+                        (MakingInstantList (elems ++ [StringRef p t]))
+                            (index + 1)
 
                 (BoolLiteral p "t") ->
                     secondLevel
-                        (MakingInstantList (elems ++ [BoolRef p True])) (index + 1)
+                        (MakingInstantList (elems ++ [BoolRef p True]))
+                            (index + 1)
 
                 (BoolLiteral p _) ->
                     secondLevel
-                        (MakingInstantList (elems ++ [BoolRef p False])) (index + 1)
+                        (MakingInstantList (elems ++ [BoolRef p False]))
+                            (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=
@@ -141,23 +146,28 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
             case tokens !! index of
                 (Identifier p t) ->
                     secondLevel
-                        (MakingLazyList (elems ++ [IdentifierRef p t])) (index + 1)
+                        (MakingLazyList (elems ++ [IdentifierRef p t]))
+                            (index + 1)
 
                 (Number p t) ->
                     secondLevel
-                        (MakingLazyList (elems ++ [NumberRef p (read t)])) (index + 1)
+                        (MakingLazyList (elems ++ [NumberRef p (read t)]))
+                            (index + 1)
 
                 (StringLiteral p t) ->
                     secondLevel
-                        (MakingLazyList (elems ++ [StringRef p t])) (index + 1)
+                        (MakingLazyList (elems ++ [StringRef p t]))
+                            (index + 1)
 
                 (BoolLiteral p "t") ->
                     secondLevel
-                        (MakingLazyList (elems ++ [BoolRef p True])) (index + 1)
+                        (MakingLazyList (elems ++ [BoolRef p True]))
+                            (index + 1)
 
                 (BoolLiteral p _) ->
                     secondLevel
-                        (MakingLazyList (elems ++ [BoolRef p False])) (index + 1)
+                        (MakingLazyList (elems ++ [BoolRef p False]))
+                            (index + 1)
 
                 (OpenParentheses _) ->
                     secondLevel ExpectingOpenParenthesesOrSingleQuote index >>=

@@ -96,11 +96,12 @@ lispEval ind _ args | length args > 1 =
 lispEval ind _ args | null args =
     throwE $ TooFewArguments ind 1
 lispEval _ st args = do
-    let whatToEval = case head args of
+    (st', args') <- evaluateLisp st [head args]
+    let whatToEval = case last args' of
                         (LispLazyList n lst) -> LispList n lst
                         d -> d
-    (st', vars) <- evaluateLisp st [whatToEval]
-    return (st', last vars)
+    (st'', vars) <- evaluateLisp st' [whatToEval]
+    return (st'', last vars)
 
 lispIf :: LispFuncProg
 lispIf ind _ args | length args > 3 =

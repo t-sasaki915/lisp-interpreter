@@ -61,6 +61,8 @@ expectString =
 expectBool :: LispData -> Except LispError Bool
 expectBool =
     \case (LispBool _ b) -> return b
+          (LispList _ []) -> return False
+          (LispLazyList _ []) -> return False
           d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "Bool"
 
 expectIdentifier :: LispData -> Except LispError String
@@ -70,8 +72,15 @@ expectIdentifier =
 
 expectList :: LispData -> Except LispError [LispData]
 expectList =
-    \case (LispList _ l) -> return l
+    \case (LispList _ l)     -> return l
+          (LispBool _ False) -> return []
           d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "List"
+
+expectLazyList :: LispData -> Except LispError [LispData]
+expectLazyList =
+    \case (LispLazyList _ l) -> return l
+          (LispBool _ False) -> return []
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "Lazy List"
 
 expectNumberT :: (Monad m) => LispData -> ExceptT LispError m Int
 expectNumberT = exceptT . expectNumber
@@ -88,6 +97,9 @@ expectIdentifierT = exceptT . expectIdentifier
 expectListT :: (Monad m) => LispData -> ExceptT LispError m [LispData]
 expectListT = exceptT . expectList
 
+expectLazyListT :: (Monad m) => LispData -> ExceptT LispError m [LispData]
+expectLazyListT = exceptT . expectLazyList
+
 instance Show LispData where
     show (LispString _ s) =
         "\"" ++ s ++ "\""
@@ -97,8 +109,12 @@ instance Show LispData where
         "t"
     show (LispBool _ False) =
         "nil"
+    show (LispList _ []) =
+        "nil"
     show (LispList _ l) =
         "(" ++ unwords (map show l) ++ ")"
+    show (LispLazyList _ []) =
+        "nil"
     show (LispLazyList _ l) =
         "'(" ++ unwords (map show l) ++ ")"
     show (LispVariable _ l d) =

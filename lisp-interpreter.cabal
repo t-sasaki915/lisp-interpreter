@@ -33,6 +33,7 @@ library
       LispPredef
       LispPredefIO
       LispPredefMathsLogic
+      LispPredefSequence
       LispPredefSyntax
       LispPredefUtil
       LispRunner

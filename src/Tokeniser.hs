@@ -72,32 +72,50 @@ tokenise' src =
                 (n, '(') ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a, OpenParentheses n], ExpectingCharacter))
+                            return ( tokens ++ [a, OpenParentheses n]
+                                   , ExpectingCharacter
+                                   )
+                        )
 
                 (n, ')') ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a, CloseParentheses n], ExpectingCharacter))
+                            return ( tokens ++ [a, CloseParentheses n]
+                                   , ExpectingCharacter
+                                   )
+                        )
                 
                 (n, '\'') ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a, SingleQuote n], ExpectingCharacter))
+                            return ( tokens ++ [a, SingleQuote n]
+                                   , ExpectingCharacter
+                                   )
+                        )
 
                 (n, c) | c `elem` [' ', '\t', '\n'] ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a], ExpectingCharacter))
+                            return ( tokens ++ [a]
+                                   , ExpectingCharacter
+                                   )
+                        )
 
                 (n, '"') ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a], BufferingStringLiteral ""))
+                            return ( tokens ++ [a]
+                                   , BufferingStringLiteral ""
+                                   )
+                        )
 
                 (n, ';') ->
                     determineIdentifier (n - 1) buffer >>=
                         (\a ->
-                            return (tokens ++ [a], IgnoringCharacter))
+                            return ( tokens ++ [a]
+                                   , IgnoringCharacter
+                                   )
+                        )
 
                 (_, c) ->
                     return (tokens, BufferingIdentifierOrNumber $ buffer ++ [c])
