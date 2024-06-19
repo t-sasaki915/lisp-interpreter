@@ -11,6 +11,7 @@ data LispError = UndefinedIdentifier Int String
                | UnexpectedEndOfString Int
                | IndentNotAllowed Int Char
                | UnknownFormatCommand Int Char
+               | IllegalArgument Int String
                deriving (Eq, Show)
 
 instance Tracable LispError where
@@ -23,6 +24,7 @@ instance Tracable LispError where
     place (UnexpectedEndOfString a)    = a
     place (IndentNotAllowed a _)       = a
     place (UnknownFormatCommand a _)   = a
+    place (IllegalArgument a _)        = a
 
     title (UndefinedIdentifier {})     = "Undefined identifier"
     title (UndefinedFunction {})       = "Undefined function"
@@ -33,6 +35,7 @@ instance Tracable LispError where
     title (UnexpectedEndOfString {})   = "Unexpected end of string"
     title (IndentNotAllowed {})        = "Indent not allowed"
     title (UnknownFormatCommand {})    = "Unknown format command"
+    title (IllegalArgument {})         = "Illegal argument"
 
     cause (UndefinedIdentifier _ a)    = a
     cause (UndefinedFunction _ a)      = a
@@ -46,3 +49,4 @@ instance Tracable LispError where
     cause (UnexpectedEndOfString _)    = ""
     cause (IndentNotAllowed _ a)       = [a]
     cause (UnknownFormatCommand _ a)   = [a]
+    cause (IllegalArgument _ a)        = a

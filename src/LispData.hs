@@ -125,21 +125,21 @@ instance Show LispData where
         "Function \"" ++ l ++ "\""
 
 instance Eq LispData where
-    (==) (LispString n1 s1) (LispString n2 s2) =
-        n1 == n2 && s1 == s2
-    (==) (LispNumber n1 x1) (LispNumber n2 x2) =
-        n1 == n2 && x1 == x2
-    (==) (LispBool n1 b1) (LispBool n2 b2) =
-        n1 == n2 && b1 == b2
-    (==) (LispList n1 l1) (LispList n2 l2) =
-        n1 == n2 && l1 == l2
-    (==) (LispLazyList n1 l1) (LispLazyList n2 l2) =
-        n1 == n2 && l1 == l2
-    (==) (LispVariable n1 l1 d1) (LispVariable n2 l2 d2) =
-        n1 == n2 && l1 == l2 && d1 == d2
-    (==) (LispIdentifier n1 i1) (LispIdentifier n2 i2) =
-        n1 == n2 && i1 == i2
-    (==) (LispFunction n1 l1 _) (LispFunction n2 l2 _) =
-        n1 == n2 && l1 == l2
+    (==) (LispString _ s1) (LispString _ s2) =
+        s1 == s2
+    (==) (LispNumber _ x1) (LispNumber _ x2) =
+        x1 == x2
+    (==) (LispBool _ b1) (LispBool _ b2) =
+        b1 == b2
+    (==) (LispList _ l1) (LispList _ l2) =
+        l1 == l2
+    (==) (LispLazyList _ l1) (LispLazyList _ l2) =
+        l1 == l2
+    (==) (LispVariable _ l1 d1) (LispVariable _ l2 d2) =
+        l1 == l2 && d1 == d2
+    (==) (LispIdentifier _ i1) (LispIdentifier _ i2) =
+        i1 == i2
+    (==) (LispFunction _ l1 _) (LispFunction _ l2 _) =
+        l1 == l2
     (==) _ _ =
         False

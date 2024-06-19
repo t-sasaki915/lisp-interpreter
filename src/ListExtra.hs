@@ -1,5 +1,7 @@
 module ListExtra
     ( (!?)
+    , dropRight
+    , takeRight
     , replaceFirst
     , isPrimitive
     , isEverythingSame
@@ -10,6 +12,12 @@ import Data.List (nub)
 (!?) :: [a] -> Int -> Maybe a
 (!?) xs i | i >= length xs = Nothing
           | otherwise      = Just (xs !! i)
+
+dropRight :: Int -> [a] -> [a]
+dropRight n xs = reverse $ drop n (reverse xs)
+
+takeRight :: Int -> [a] -> [a]
+takeRight n xs = reverse $ take n (reverse xs)
 
 isPrimitive :: Eq a => [a] -> Bool
 isPrimitive [] = True
