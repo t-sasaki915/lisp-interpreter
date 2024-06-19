@@ -5,7 +5,7 @@ module ListExtra
     , isEverythingSame
     ) where
 
-import Data.List (elemIndices)
+import Data.List (nub)
 
 (!?) :: [a] -> Int -> Maybe a
 (!?) xs i | i >= length xs = Nothing
@@ -13,11 +13,11 @@ import Data.List (elemIndices)
 
 isPrimitive :: Eq a => [a] -> Bool
 isPrimitive [] = True
-isPrimitive xs = all (((< 2) . length) . (`elemIndices` xs)) xs
+isPrimitive xs = length (nub xs) == length xs
 
 isEverythingSame :: Eq a => [a] -> Bool
 isEverythingSame [] = True
-isEverythingSame xs = all (head xs ==) xs
+isEverythingSame xs = length (nub xs) == 1
 
 replaceFirst :: Eq a => [a] -> [a] -> [a] -> [a]
 replaceFirst [] _ _ = []

@@ -1,9 +1,11 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use mapM_" #-}
+{-# LANGUAGE LambdaCase #-}
 
 module LispPredefSyntax where
 
+import ExceptExtra (exceptT)
 import LispData
 import LispError (LispError(..))
 import LispInterpreter (evaluateLisp)
@@ -11,9 +13,10 @@ import LispPredefUtil (LispFuncProg)
 import ListExtra ((!?))
 
 import Control.Lens (over)
+import Control.Monad (foldM)
 import Control.Monad.Trans.Except (throwE)
-import Data.Maybe (fromMaybe)
 import Data.List (find)
+import Data.Maybe (fromMaybe)
 
 lispPredefFuncsSyntax :: [LispData]
 lispPredefFuncsSyntax =
@@ -26,11 +29,9 @@ lispDefun :: LispFuncProg
 lispDefun ind _ args | length args < 3 =
     throwE $ TooFewArguments ind 3
 lispDefun ind st args = do
-    name    <- expectIdentifierT (head args)
-    _       <- verifyId name
-    argLst' <- expectListT (args !! 1)
-    argLst  <- mapM expectIdentifierT argLst'
-    _       <- mapM verifyId argLst
+    name   <- expectIdentifierT (head args)
+    argLst <- expectListT (args !! 1) >>= gatherArgs
+    st'    <- dropIntersect name st
     return ( over
                 functions
                 (++ [ LispFunction
@@ -39,7 +40,7 @@ lispDefun ind st args = do
                         (program argLst (drop 2 args))
                     ]
                 )
-                st
+                st'
             , head args
             )
     where
@@ -48,24 +49,46 @@ lispDefun ind st args = do
         program args' _ ind' _ args'' | length args' > length args'' =
             throwE $ TooFewArguments ind' (length args')
         program args' progs _ st' args'' = do
-            (st'', vars) <- evaluateLisp stWithArgs progs
-            return (st'', last vars)
-            where argVars = zipWith (LispVariable ind) args' args''
-                  stWithArgs = over localVariables (++ argVars) st'
+            (st'', args''')  <- evaluateLisp st' args''
+            (st''', progs')  <- exceptT $ replaceArgs args' progs st'' args'''
+            (st'''', values) <- evaluateLisp st''' progs'
+            return (st'''', last values)
 
-        search name filt store = find (filt name) (store st) >>=
-            const (Just $ throwE (IdentifierConfliction ind name))
+        replaceArgs args' progs st' args'' = foldM
+            (\(st'', progs') -> \case
+                (LispIdentifier n l) ->
+                    case find (\(a, _) -> a == l) (zip args' args'') of
+                        Just (_, d) ->
+                            return (st'', progs' ++ [d])
 
-        verifyId name =
-            fromMaybe
-                ( fromMaybe
-                    ( fromMaybe
-                        (return ())
-                        (search name varFilt _variables)
-                    )
-                    (search name varFilt _localVariables)
-                )
-                (search name funcFilt _functions)
+                        Nothing ->
+                            return (st'', progs' ++ [LispIdentifier n l])
+
+                (LispList n lst) -> do
+                    (st''', lst') <- replaceArgs args' lst st'' args''
+                    return (st''', progs' ++ [LispList n lst'])
+
+                (LispLazyList n lst) -> do
+                    (st''', lst') <- replaceArgs args' lst st'' args''
+                    return (st''', progs' ++ [LispLazyList n lst'])
+
+                d ->
+                    return (st'', progs' ++ [d])
+
+            ) (st', []) progs
+
+        dropIntersect name st' = return $
+            over functions (filter (not . funcFilt name)) st'
+
+        gatherArgs = foldM
+            (\known -> \case
+                (LispIdentifier n l) | l `elem` known ->
+                    throwE $ IdentifierConfliction n l
+                (LispIdentifier _ l) ->
+                    return (known ++ [l])
+                d -> 
+                    throwE $ TypeMismatch (lispDataIndex d) (show d) "Identifier"
+            ) []
 
 lispEval :: LispFuncProg
 lispEval ind _ args | length args > 1 =

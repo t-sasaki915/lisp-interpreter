@@ -110,11 +110,11 @@ evaluateLisp state =
                         ( fromMaybe
                             ( fromMaybe
                                 (throwE $ UndefinedIdentifier n lb)
-                                (search varFilt _variables)
+                                (search funcFilt _functions)
                             )
-                            (search varFilt _localVariables)
+                            (search varFilt _variables)
                         )
-                        (search funcFilt _functions)
+                        (search varFilt _localVariables)
         )
         (state, [])
     where
