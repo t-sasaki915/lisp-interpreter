@@ -30,6 +30,7 @@ library
       LispError
       LispInterpreter
       LispPredef
+      LispPredefIO
       LispPredefMathsLogic
       LispPredefSyntax
       LispPredefUtil
