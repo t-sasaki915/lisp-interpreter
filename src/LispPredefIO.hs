@@ -22,11 +22,10 @@ lispFormat ind _ args | length args < 2 =
     throwE (TooFewArguments ind 2)
 lispFormat ind st args = do
     mode      <- expectBoolT (head args)
-    base      <- expectStringT (args !! 1)
-    formatted <- exceptT $ lispFormatString base (drop 2 args)
+    formatted <- exceptT $ lispFormatString ind (args !! 1) (drop 2 args)
 
     if mode then
-        lift (putStrLn formatted) >> return (st, LispBool ind False)
+        lift (putStr formatted) >> return (st, LispBool ind False)
     else
         return (st, LispString ind formatted)
 

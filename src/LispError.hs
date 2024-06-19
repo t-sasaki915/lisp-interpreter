@@ -8,7 +8,9 @@ data LispError = UndefinedIdentifier Int String
                | TooFewArguments Int Int
                | TooManyArguments Int Int
                | IdentifierConfliction Int String
-               | BrokenProgramStructure Int String
+               | UnexpectedEndOfString Int
+               | IndentNotAllowed Int Char
+               | UnknownFormatCommand Int Char
                deriving (Eq, Show)
 
 instance Tracable LispError where
@@ -18,7 +20,9 @@ instance Tracable LispError where
     place (TooFewArguments a _)        = a
     place (TooManyArguments a _)       = a
     place (IdentifierConfliction a _)  = a
-    place (BrokenProgramStructure a _) = a
+    place (UnexpectedEndOfString a)    = a
+    place (IndentNotAllowed a _)       = a
+    place (UnknownFormatCommand a _)   = a
 
     title (UndefinedIdentifier {})     = "Undefined identifier"
     title (UndefinedFunction {})       = "Undefined function"
@@ -26,7 +30,9 @@ instance Tracable LispError where
     title (TooFewArguments {})         = "Too few arguments"
     title (TooManyArguments {})        = "Too many arguments"
     title (IdentifierConfliction {})   = "Identifier confliction"
-    title (BrokenProgramStructure {})  = "Broken program structure"
+    title (UnexpectedEndOfString {})   = "Unexpected end of string"
+    title (IndentNotAllowed {})        = "Indent not allowed"
+    title (UnknownFormatCommand {})    = "Unknown format command"
 
     cause (UndefinedIdentifier _ a)    = a
     cause (UndefinedFunction _ a)      = a
@@ -37,5 +43,6 @@ instance Tracable LispError where
     cause (TooManyArguments _ a)       =
         "The acceptable number of arguments for this function is " ++ show a ++ "."
     cause (IdentifierConfliction _ a)  = a
-    cause (BrokenProgramStructure _ a) =
-        "Illegal " ++ a ++ " has found, which should not be happend."
+    cause (UnexpectedEndOfString _)    = ""
+    cause (IndentNotAllowed _ a)       = [a]
+    cause (UnknownFormatCommand _ a)   = [a]
