@@ -90,7 +90,7 @@ lispLast ind st args
         lst <- expectLazyListT (head args)
         n   <- expectNumberT (fromMaybe (LispNumber ind 1) (args !? 1))
         if n < 0 then
-            throwE (IllegalArgument ind "Given number is negative")
+            throwE (IllegalArgument ind "Given number is negative.")
         else
             return (st, LispLazyList ind (takeRight n lst))
 

@@ -18,22 +18,20 @@ lispPredefFuncsIO =
     ]
 
 lispFormat :: LispFuncProg
-lispFormat ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispFormat ind st args = do
-    mode      <- expectBoolT (head args)
-    formatted <- exceptT $ lispFormatString ind (args !! 1) (drop 2 args)
-
-    if mode then
-        lift (putStr formatted) >> return (st, LispBool ind False)
-    else
-        return (st, LispString ind formatted)
+lispFormat ind st args
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        mode <- expectBoolT (head args)
+        fmt  <- exceptT $ lispFormatString ind (args !! 1) (drop 2 args)
+        if mode then
+            lift (putStr fmt) >> return (st, LispBool ind False)
+        else
+            return (st, LispString ind fmt)
 
 lispWriteString :: LispFuncProg
-lispWriteString ind _ args | length args > 1 =
-    throwE (TooManyArguments ind 1)
-lispWriteString ind _ args | null args =
-    throwE (TooFewArguments ind 1)
-lispWriteString ind st args =
-    expectStringT (head args) >>=
-        (\a -> lift (putStrLn a) >> return (st, LispString ind a))
+lispWriteString ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       =
+        expectStringT (head args) >>=
+            (\a -> lift (putStrLn a) >> return (st, LispString ind a))
