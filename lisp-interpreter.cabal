@@ -28,6 +28,7 @@ library
       ExceptExtra
       LispData
       LispError
+      LispFormat
       LispInterpreter
       LispPredef
       LispPredefIO
