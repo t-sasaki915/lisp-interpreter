@@ -109,9 +109,11 @@ replace callIndex str cmds fills = foldM
 
 lispFormatString :: Int -> LispData -> [LispData] -> Except LispError String
 lispFormatString callIndex (LispString n str) fills = do
-    cmds           <- extractCommands n str
-    (formatted, _) <- replace callIndex str cmds fills
-    return formatted
+    cmds                  <- extractCommands n str
+    (formatted, refIndex) <- replace callIndex str cmds fills
+    if refIndex == length fills
+        then return formatted
+        else throwE $ TooManyArguments callIndex (2 + refIndex)
 
 lispFormatString _ d _ =
     throwE $ TypeMismatch (lispDataIndex d) (show d) "String"
