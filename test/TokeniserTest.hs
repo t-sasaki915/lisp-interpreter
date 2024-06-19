@@ -5,16 +5,17 @@ module TokeniserTest where
 import Token (Token(..))
 import Tokeniser (TokeniserError(..), tokenise)
 
-import Test.HUnit
+import Control.Monad.Trans.Except (Except, throwE)
+import Test.HUnit (Test(TestCase), assertEqual)
 
-tokeniserTest :: String -> Either TokeniserError [Token] -> Test
+tokeniserTest :: String -> Except TokeniserError [Token] -> Test
 tokeniserTest src res =
     TestCase $ assertEqual "" (tokenise src) res
 
 tokeniserTest1 :: Test
 tokeniserTest1 = tokeniserTest
     "(+ 1 2)"
-    ( Right
+    ( return
         [ OpenParentheses 0
         , Identifier 1 "+"
         , Number 3 "1"
@@ -35,7 +36,7 @@ tokeniserTest2 = tokeniserTest
         , ")"
         ]
     )
-    ( Right
+    ( return
         [ OpenParentheses 21
         , Identifier 25 "defn"
         , Identifier 35 "factorial"
@@ -70,9 +71,9 @@ tokeniserTest2 = tokeniserTest
 tokeniserTest3 :: Test
 tokeniserTest3 = tokeniserTest
     "(\"aaa)"
-    (Left $ UnexpectedEOF 0)
+    (throwE $ UnexpectedEOF 0)
 
 tokeniserTest4 :: Test
 tokeniserTest4 = tokeniserTest
     "'(1 2 3a)"
-    (Left $ InvalidNumberFormat 7 "3a")
+    (throwE $ InvalidNumberFormat 7 "3a")

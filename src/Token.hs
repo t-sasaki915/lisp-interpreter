@@ -1,8 +1,4 @@
-module Token
-    ( Token(..)
-    , tokenIndex
-    , tokenLetter
-    ) where
+module Token (Token(..), tokenIndex, tokenLetter) where
 
 data Token = OpenParentheses Int
            | CloseParentheses Int

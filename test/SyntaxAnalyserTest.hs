@@ -6,11 +6,12 @@ import Syntax (Syntax(..))
 import SyntaxAnalyser (SyntaxAnalyserError(..), syntaxAnalyse)
 import Tokeniser (tokenise)
 
-import Test.HUnit
+import Control.Monad.Trans.Except (Except, throwE, runExcept)
+import Test.HUnit (Test(TestCase), assertEqual)
 
-syntaxAnalyserTest :: String -> Either SyntaxAnalyserError [Syntax] -> Test
+syntaxAnalyserTest :: String -> Except SyntaxAnalyserError [Syntax] -> Test
 syntaxAnalyserTest src res =
-    case tokenise src of
+    case runExcept $ tokenise src of
         Right tokens ->
             TestCase $ assertEqual "" (syntaxAnalyse tokens) res
 
@@ -24,7 +25,7 @@ syntaxAnalyserTest1 = syntaxAnalyserTest
         , "'(a + \"aaa\")"
         ]
     )
-    ( Right
+    ( return
         [ InstantList 6
             [ NumberRef 1 1
             , NumberRef 3 2
@@ -41,7 +42,7 @@ syntaxAnalyserTest1 = syntaxAnalyserTest
 syntaxAnalyserTest2 :: Test
 syntaxAnalyserTest2 = syntaxAnalyserTest
     "'((0) 1 2 (3 4 (5 6) 7) 8 (9))"
-    ( Right
+    ( return
         [ LazyList 29
             [ InstantList 4
                 [ NumberRef 3 0
@@ -77,7 +78,7 @@ syntaxAnalyserTest3 = syntaxAnalyserTest
         , ")"
         ]
     )
-    ( Right
+    ( return
         [ InstantList 95
             [ IdentifierRef 25 "defn"
             , IdentifierRef 35 "factorial"
@@ -112,9 +113,9 @@ syntaxAnalyserTest3 = syntaxAnalyserTest
 syntaxAnalyserTest4 :: Test
 syntaxAnalyserTest4 = syntaxAnalyserTest
     "(1))"
-    (Left $ UnexpectedToken 3 "')'" "'(' or '''")
+    (throwE $ UnexpectedToken 3 "')'" "'(' or '''")
 
 syntaxAnalyserTest5 :: Test
 syntaxAnalyserTest5 = syntaxAnalyserTest
     "(1 "
-    (Left $ UnexpectedEOF 0)
+    (throwE $ UnexpectedEOF 0)

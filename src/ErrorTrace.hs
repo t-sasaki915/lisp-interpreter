@@ -5,8 +5,8 @@ class Tracable a where
     title :: a -> String
     cause :: a -> String
 
-traceError :: (Tracable a) => a -> String -> String
-traceError err src =
+traceError :: (Tracable a) => String -> a -> String
+traceError src err =
     "(Line " ++ line ++ ", Index " ++ index ++ ") " ++ title err ++
         case cause err of
             "" -> "."
@@ -14,3 +14,4 @@ traceError err src =
     where
         line = show $ length (lines (take (place err + 1) src))
         index = show $ subtract 1 (length (last (lines (take (place err + 1) src))))
+    

@@ -1,11 +1,10 @@
-module SyntaxAnalyser
-    ( SyntaxAnalyserError(..)
-    , syntaxAnalyse
-    ) where
+module SyntaxAnalyser (SyntaxAnalyserError(..), syntaxAnalyse) where
 
 import ErrorTrace (Tracable(..))
 import Syntax (Syntax(..))
 import Token (Token(..), tokenIndex, tokenLetter)
+
+import Control.Monad.Trans.Except (Except, throwE)
 
 data SyntaxAnalyserError = UnexpectedToken Int String String
                          | UnexpectedEOF Int
@@ -27,18 +26,16 @@ data State = ExpectingOpenParenthesesOrSingleQuote
            | MakingInstantList [Syntax]
            | MakingLazyList [Syntax]
 
-syntaxAnalyse :: [Token] -> Either SyntaxAnalyserError [Syntax]
+syntaxAnalyse :: [Token] -> Except SyntaxAnalyserError [Syntax]
 syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
     where
-        topLevel :: State -> Int -> [Syntax] ->
-                    Either SyntaxAnalyserError [Syntax]
         topLevel state index determined | index >= length tokens =
             case state of
                 ExpectingOpenParenthesesOrSingleQuote ->
-                    Right determined
+                    return determined
 
                 _ ->
-                    Left $ UnexpectedEOF 0
+                    throwE $ UnexpectedEOF 0
         
         topLevel ExpectingOpenParenthesesOrSingleQuote index determined =
             case tokens !! index of
@@ -77,9 +74,8 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                                 (determined ++ [program])
                 )
 
-        secondLevel :: State -> Int -> Either SyntaxAnalyserError (Int, Syntax)
         secondLevel _ index | index >= length tokens =
-            Left $ UnexpectedEOF 0
+            throwE $ UnexpectedEOF 0
         
         secondLevel ExpectingOpenParenthesesOrSingleQuote index =
             case tokens !! index of
@@ -139,7 +135,7 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                         )
 
                 (CloseParentheses n) ->
-                    Right (index, InstantList n elems)
+                    return (index, InstantList n elems)
 
         secondLevel (MakingLazyList elems) index =
             case tokens !! index of
@@ -180,7 +176,7 @@ syntaxAnalyse tokens = topLevel ExpectingOpenParenthesesOrSingleQuote 0 []
                         )
 
                 (CloseParentheses n) ->
-                    Right (index, LazyList n elems)
+                    return (index, LazyList n elems)
 
         unexpectedToken t e =
-            Left $ UnexpectedToken (tokenIndex t) (tokenLetter t) e
+            throwE $ UnexpectedToken (tokenIndex t) (tokenLetter t) e

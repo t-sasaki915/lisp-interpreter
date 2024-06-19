@@ -23,6 +23,7 @@ dependencies:
 - regex-posix >= 0.96 && < 0.97
 - lens >= 5.2 && < 5.3
 - HUnit >= 1.6 && < 1.7
+- transformers >= 0.6.1 && < 0.6.2
 
 ghc-options:
 - -Wall

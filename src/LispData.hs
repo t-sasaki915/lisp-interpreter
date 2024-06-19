@@ -1,25 +1,14 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module LispData
-    ( LispData(..)
-    , LispState(..)
-    , lispDataIndex
-    , varFilt
-    , funcFilt
-    , expectNumber
-    , expectString
-    , expectBool
-    , expectIdentifier
-    , expectList
-    , functions
-    , variables
-    , localVariables
-    ) where
+module LispData where
 
+import ExceptExtra (exceptT)
 import LispError (LispError(..))
 
-import Control.Lens
+import Control.Lens (makeLenses)
+import Control.Monad.Trans.Except (Except, ExceptT, throwE)
 
 data LispData = LispString Int String
               | LispNumber Int Int
@@ -29,7 +18,7 @@ data LispData = LispString Int String
               | LispVariable Int String LispData
               | LispIdentifier Int String
               | LispFunction Int String (Int -> LispState -> [LispData] ->
-                             IO (Either LispError (LispState, LispData)))
+                             ExceptT LispError IO (LispState, LispData))
 
 data LispState = LispState
     { _functions      :: [LispData]
@@ -59,30 +48,45 @@ funcFilt name =
     \case (LispFunction _ n _) -> n == name
           _                    -> False
 
-expectNumber :: LispData -> Either LispError Int
+expectNumber :: LispData -> Except LispError Int
 expectNumber =
-    \case (LispNumber _ x) -> Right x
-          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Number"
+    \case (LispNumber _ x) -> return x
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "Number"
 
-expectString :: LispData -> Either LispError String
+expectString :: LispData -> Except LispError String
 expectString =
-    \case (LispString _ s) -> Right s
-          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "String"
+    \case (LispString _ s) -> return s
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "String"
 
-expectBool :: LispData -> Either LispError Bool
+expectBool :: LispData -> Except LispError Bool
 expectBool =
-    \case (LispBool _ b) -> Right b
-          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Bool"
+    \case (LispBool _ b) -> return b
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "Bool"
 
-expectIdentifier :: LispData -> Either LispError String
+expectIdentifier :: LispData -> Except LispError String
 expectIdentifier =
-    \case (LispIdentifier _ i) -> Right i
-          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "Identifier"
+    \case (LispIdentifier _ i) -> return i
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "Identifier"
 
-expectList :: LispData -> Either LispError [LispData]
+expectList :: LispData -> Except LispError [LispData]
 expectList =
-    \case (LispList _ l) -> Right l
-          d -> Left $ TypeMismatch (lispDataIndex d) (show d) "List"
+    \case (LispList _ l) -> return l
+          d -> throwE $ TypeMismatch (lispDataIndex d) (show d) "List"
+
+expectNumberT :: (Monad m) => LispData -> ExceptT LispError m Int
+expectNumberT = exceptT . expectNumber
+
+expectStringT :: (Monad m) => LispData -> ExceptT LispError m String
+expectStringT = exceptT . expectString
+
+expectBoolT :: (Monad m) => LispData -> ExceptT LispError m Bool
+expectBoolT = exceptT . expectBool
+
+expectIdentifierT :: (Monad m) => LispData -> ExceptT LispError m String
+expectIdentifierT = exceptT . expectIdentifier
+
+expectListT :: (Monad m) => LispData -> ExceptT LispError m [LispData]
+expectListT = exceptT . expectList
 
 instance Show LispData where
     show (LispString _ s) =

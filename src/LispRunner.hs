@@ -1,25 +1,18 @@
 module LispRunner (runLisp) where
 
+import ExceptExtra (exceptT)
 import LispData (LispState(..))
 import LispError (LispError(..))
-import LispInterpreter (translate, evaluate)
+import LispInterpreter (translateSyntax, evaluateLisp)
 import LispPredef (lispPredefinedFunctions)
 import Syntax (Syntax(..))
 
-runLisp :: [Syntax] -> IO (Either LispError ())
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Except (ExceptT)
+
+runLisp :: [Syntax] -> ExceptT LispError IO ()
 runLisp program = do
-    case translate initState program of
-        Right (state, program') -> do
-            res <- evaluate state program'
-            case res of
-                Right (_, v) ->
-                    print (last v) >>
-                        return (Right ())
-
-                Left err ->
-                    return $ Left err
-
-        Left err ->
-            return $ Left err
-
+    (st, prog)  <- exceptT $ translateSyntax initState program
+    (_, values) <- evaluateLisp st prog
+    lift $ print (last values)
     where initState = LispState lispPredefinedFunctions [] []
