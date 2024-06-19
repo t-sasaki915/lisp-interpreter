@@ -8,6 +8,7 @@ import LispData
 import LispError (LispError(..))
 import LispInterpreter (evaluateLisp)
 import LispPredefUtil (LispFuncProg)
+import ListExtra ((!?))
 
 import Control.Lens (over)
 import Control.Monad.Trans.Except (throwE)
@@ -17,6 +18,7 @@ import Data.List (find)
 lispPredefFuncsSyntax :: [LispData]
 lispPredefFuncsSyntax =
     [ LispFunction (-1) "defun" lispDefun
+    , LispFunction (-1) "if"    lispIf
     ]
 
 lispDefun :: LispFuncProg
@@ -63,3 +65,18 @@ lispDefun ind st args = do
                     (search name varFilt _localVariables)
                 )
                 (search name funcFilt _functions)
+
+lispIf :: LispFuncProg
+lispIf ind _ args | length args > 3 =
+    throwE $ TooManyArguments ind 3
+lispIf ind _ args | length args < 2 =
+    throwE $ TooFewArguments ind 2
+lispIf ind st args = do
+    (st', vars) <- evaluateLisp st [head args]
+    cond        <- expectBoolT (last vars)
+
+    let whatToEval = if cond then args !! 1
+                     else fromMaybe (LispBool ind False) (args !? 2)
+
+    (st'', vars') <- evaluateLisp st' [whatToEval]
+    return (st'', last vars')
