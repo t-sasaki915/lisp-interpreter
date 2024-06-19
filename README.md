@@ -1,3 +1,5 @@
 # lisp-interpreter
 I am going to make a Lisp interpreter to practise and understand Lisp.<br>
-The goal is to follow the standards of Common Lisp.
+Goals are
+1. Make a Brainf**k interpreter with this Lisp interpreter.
+2. Follow the standards of Common Lisp.
