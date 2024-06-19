@@ -77,42 +77,38 @@ lispNotEqual ind st args =
         )
 
 lispOnePlus :: LispFuncProg
-lispOnePlus ind _ args | length args > 1 =
-    throwE (TooManyArguments ind 1)
-lispOnePlus ind _ args | null args =
-    throwE (TooFewArguments ind 1)
-lispOnePlus ind st args =
-    expectNumberT (head args) >>=
-        (\x -> return (st, LispNumber ind (x + 1)))
+lispOnePlus ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       =
+        expectNumberT (head args) >>=
+            (\x -> return (st, LispNumber ind (x + 1)))
 
 lispOneMinus :: LispFuncProg
-lispOneMinus ind _ args | length args > 1 =
-    throwE (TooManyArguments ind 1)
-lispOneMinus ind _ args | null args =
-    throwE (TooFewArguments ind 1)
-lispOneMinus ind st args =
-    expectNumberT (head args) >>=
-        (\x -> return (st, LispNumber ind (x - 1)))
+lispOneMinus ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       =
+        expectNumberT (head args) >>=
+            (\x -> return (st, LispNumber ind (x - 1)))
 
 lispLessThan :: LispFuncProg
-lispLessThan ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispLessThan ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispLessThan ind st args = do
-    a <- expectNumberT (head args)
-    b <- expectNumberT (args !! 1)
-    return (st, LispBool ind (a < b))
+lispLessThan ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        a <- expectNumberT (head args)
+        b <- expectNumberT (args !! 1)
+        return (st, LispBool ind (a < b))
 
 lispLessThanOrEq :: LispFuncProg
-lispLessThanOrEq ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispLessThanOrEq ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispLessThanOrEq ind st args = do
-    a <- expectNumberT (head args)
-    b <- expectNumberT (args !! 1)
-    return (st, LispBool ind (a <= b))
+lispLessThanOrEq ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        a <- expectNumberT (head args)
+        b <- expectNumberT (args !! 1)
+        return (st, LispBool ind (a <= b))
 
 lispEquals :: LispFuncProg
 lispEquals ind st args =
@@ -123,24 +119,22 @@ lispEquals ind st args =
         )
 
 lispGreaterThan :: LispFuncProg
-lispGreaterThan ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispGreaterThan ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispGreaterThan ind st args = do
-    a <- expectNumberT (head args)
-    b <- expectNumberT (args !! 1)
-    return (st, LispBool ind (a > b))
+lispGreaterThan ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        a <- expectNumberT (head args)
+        b <- expectNumberT (args !! 1)
+        return (st, LispBool ind (a > b))
 
 lispGreaterThanOrEq :: LispFuncProg
-lispGreaterThanOrEq ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispGreaterThanOrEq ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispGreaterThanOrEq ind st args = do
-    a <- expectNumberT (head args)
-    b <- expectNumberT (args !! 1)
-    return (st, LispBool ind (a >= b))
+lispGreaterThanOrEq ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       = do
+        a <- expectNumberT (head args)
+        b <- expectNumberT (args !! 1)
+        return (st, LispBool ind (a >= b))
 
 lispAnd :: LispFuncProg
 lispAnd ind st args =
@@ -151,20 +145,18 @@ lispAnd ind st args =
         )
 
 lispEq :: LispFuncProg
-lispEq ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispEq ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispEq ind st args =
-    return (st, LispBool ind (head args == last args))
+lispEq ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       =
+        return (st, LispBool ind (head args == last args))
 
 lispEqual :: LispFuncProg
-lispEqual ind _ args | length args > 2 =
-    throwE (TooManyArguments ind 2)
-lispEqual ind _ args | length args < 2 =
-    throwE (TooFewArguments ind 2)
-lispEqual ind st args =
-    return (st, LispBool ind (head args == last args))
+lispEqual ind st args
+    | length args > 2 = throwE (TooManyArguments ind 2)
+    | length args < 2 = throwE (TooFewArguments ind 2)
+    | otherwise       =
+        return (st, LispBool ind (head args == last args))
 
 lispMax :: LispFuncProg
 lispMax ind st args =
@@ -183,13 +175,12 @@ lispMin ind st args =
         )
 
 lispNot :: LispFuncProg
-lispNot ind _ args | length args > 1 =
-    throwE (TooManyArguments ind 1)
-lispNot ind _ args | null args =
-    throwE (TooFewArguments ind 1)
-lispNot ind st args =
-    expectBoolT (head args) >>=
-        (\a -> return (st, LispBool ind (not a)))
+lispNot ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       =
+        expectBoolT (head args) >>=
+            (\a -> return (st, LispBool ind (not a)))
 
 lispOr :: LispFuncProg
 lispOr ind st args =
@@ -200,10 +191,9 @@ lispOr ind st args =
         )
 
 lispZerop :: LispFuncProg
-lispZerop ind _ args | length args > 1 =
-    throwE (TooManyArguments ind 1)
-lispZerop ind _ args | null args =
-    throwE (TooFewArguments ind 1)
-lispZerop ind st args =
-    expectNumberT (head args) >>=
-        (\a -> return (st, LispBool ind (a == 0)))
+lispZerop ind st args
+    | length args > 1 = throwE (TooManyArguments ind 1)
+    | null args       = throwE (TooFewArguments ind 1)
+    | otherwise       =
+        expectNumberT (head args) >>=
+            (\a -> return (st, LispBool ind (a == 0)))
