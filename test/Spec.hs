@@ -1,3 +1,5 @@
+import ParserSpec
+
 import System.Exit (exitFailure, exitSuccess)
 import Test.HUnit
 
@@ -11,5 +13,9 @@ main = do
         exitSuccess
     where
         tests = TestList
-            [
+            [ TestLabel "Simple List Parsing"   parserTest1
+            , TestLabel "Multiple List Parsing" parserTest2
+            , TestLabel "Type Recognisation"    parserTest3
+            , TestLabel "Nested List Parsing"   parserTest4
+            , TestLabel "Comment Parsing"       parserTest5
             ]

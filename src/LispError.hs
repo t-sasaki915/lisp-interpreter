@@ -11,6 +11,7 @@ class LispError a where
 
 data ParseError = UnexpectedEOF
                 | UnknownChar Int String
+                deriving (Eq, Show)
 
 instance LispError ParseError where
     index UnexpectedEOF     = 0
@@ -27,6 +28,7 @@ data RuntimeError = UndefinedVariable Int String
                   | SyntaxError Int String
                   | IllegalFunctionCall Int
                   | IllegalBehaviour Int
+                  deriving (Eq, Show)
 
 instance LispError RuntimeError where
     index (UndefinedVariable a _) = a

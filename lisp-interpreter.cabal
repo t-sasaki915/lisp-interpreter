@@ -63,6 +63,7 @@ test-suite lisp-interpreter-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      ParserSpec
       Paths_lisp_interpreter
   hs-source-dirs:
       test
