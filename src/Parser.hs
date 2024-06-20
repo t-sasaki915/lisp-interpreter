@@ -6,15 +6,22 @@ import ListExtra (break')
 
 import Control.Monad.Trans.Except (Except, throwE)
 import Data.Functor ((<&>))
+import Data.List (find)
 import Text.Read (readMaybe)
 import Text.Regex.Posix ((=~))
 
 data ParseError = UnexpectedEOF
+                | UnknownChar Int String
 
 instance Tracable ParseError where
-    place UnexpectedEOF = 0
-    title UnexpectedEOF = "Unexpected end of file"
-    cause UnexpectedEOF = ""
+    place UnexpectedEOF     = 0
+    place (UnknownChar n _) = n
+
+    title UnexpectedEOF     = "Unexpected end of file"
+    title (UnknownChar {})  = "Unknown character"
+
+    cause UnexpectedEOF     = ""
+    cause (UnknownChar _ a) = a
 
 data Status = Start
             | ReadingSymb String
@@ -55,21 +62,21 @@ parse' str i parsed Start =
 
 parse' str i parsed (ReadingSymb buf) =
     case str !! i of
-        '(' ->
-            let symb = finaliseRead (i - 1) buf in do
+        '(' -> do
+            symb <- finaliseRead (i - 1) buf
             (i', lst) <- parse' str (i + 1) [] Start
             parse' str (i' + 1) (LispList i' lst : symb : parsed) Start
 
-        ')' ->
-            let symb = finaliseRead (i - 1) buf in
+        ')' -> do
+            symb <- finaliseRead (i - 1) buf
             return (i, reverse $ symb : parsed)
 
-        ';' ->
-            let symb = finaliseRead (i - 1) buf in
+        ';' -> do
+            symb <- finaliseRead (i - 1) buf
             parse' str (i + 1) (symb : parsed) Ignoring
 
-        c | c `elem` [' ', '\t', '\n'] ->
-            let symb = finaliseRead (i - 1) buf in
+        c | c `elem` [' ', '\t', '\n'] -> do
+            symb <- finaliseRead (i - 1) buf
             parse' str (i + 1) (symb : parsed) Start
 
         c ->
@@ -92,22 +99,48 @@ parse' str i parsed Ignoring =
             parse' str (i + 1) parsed Ignoring
 
 
-finaliseRead :: Int -> String -> LispDataType
+finaliseRead :: Int -> String -> Except ParseError LispDataType
 finaliseRead n buffer =
     case readMaybe buffer :: Maybe Int of
-        Just z -> LispInteger n z
+        Just z -> return $ LispInteger n z
         Nothing ->
             case readMaybe buffer :: Maybe Float of
-                Just f -> LispReal n f
+                Just f -> return $ LispReal n f
                 Nothing ->
                     case buffer of
                         "#t" ->
-                            LispBoolean n True
+                            return $ LispBoolean n True
                         "#f" ->
-                            LispBoolean n False
+                            return $ LispBoolean n False
+                        ('#' : '\\' : xs) ->
+                            analyseChar n xs
                         _ | buffer =~ "[0-9]+\\/[0-9]+" == buffer ->
-                            uncurry (LispRational n)
+                            return $
+                                uncurry (LispRational n)
                                     (mapT read (break' (== '/') buffer))
                         _ ->
-                            LispSymbol n buffer
+                            return $ LispSymbol n buffer
     where mapT f (a, b) = (f a, f b)
+
+analyseChar :: Int -> String -> Except ParseError LispDataType
+analyseChar n str =
+    case readMaybe str :: Maybe Char of
+        Just c ->
+            return (LispCharacter n c)
+
+        Nothing ->
+            case find (\(l, _) -> str == l) specialChars of
+                Just (_, c) ->
+                    return (LispCharacter n c)
+                
+                Nothing ->
+                    throwE (UnknownChar n str)
+
+specialChars :: [(String, Char)]
+specialChars =
+    [ ("Backspace", '\b')
+    , ("Tab"      , '\t')
+    , ("Page"     , '\f')
+    , ("Linefeed" , '\n')
+    , ("Return"   , '\r')
+    ]
