@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Eval (eval) where
 
 import LispData
@@ -8,15 +10,30 @@ import Control.Monad.Trans.Except (throwE)
 import Data.Functor ((<&>))
 
 eval :: LispData -> Eval
-eval ld = case ld of
-    (LispSymbol _ _) ->
-        variableReference ld
+eval = \case
+    (LispSymbol n s) ->
+        variableReference (LispSymbol n s)
 
-    _ | isAtom ld ->
-        return ld
+    (LispInteger n z) ->
+        return (LispInteger n z)
 
-    (LispList _ []) ->
-        return ld
+    (LispReal n r) ->
+        return (LispReal n r)
+
+    (LispRational n a b) ->
+        return (LispRational n a b)
+
+    (LispBool n b) ->
+        return (LispBool n b)
+
+    (LispString n s) ->
+        return (LispString n s)
+
+    (LispCharacter n c) ->
+        return (LispCharacter n c)
+
+    (LispList n []) ->
+        return (LispBool n False)
 
     (LispList _ [LispSymbol n "if"]) ->
         throwE (SyntaxError n "if")
@@ -25,15 +42,13 @@ eval ld = case ld of
         case args of
             [test, body1, body2] -> do
                 cond <- eval test <&> treatAsLispBool
-                if cond
-                    then eval body1
-                    else eval body2
+                if cond then eval body1
+                        else eval body2
 
             [test, body] -> do
                 cond <- eval test <&> treatAsLispBool
-                if cond
-                    then eval body
-                    else return (LispBool n False)
+                if cond then eval body
+                        else return (LispBool n False)
 
             _ ->
                 throwE (SyntaxError n "if")
@@ -49,6 +64,3 @@ eval ld = case ld of
 
     (LispList _ xs) ->
         throwE (IllegalFunctionCall (index (head xs)))
-
-    _ ->
-        throwE (IllegalBehaviour (-1))

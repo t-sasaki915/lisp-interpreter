@@ -44,6 +44,9 @@ parse' str i parsed Start =
         '"' ->
             parse' str (i + 1) parsed (ReadingStr "")
 
+        c | c `elem` [' ', '\t', '\n'] ->
+            parse' str (i + 1) parsed Start
+
         c ->
             parse' str (i + 1) parsed (ReadingSymb [c])
 
@@ -99,6 +102,8 @@ finaliseRead n buffer =
                             return $ LispBool n True
                         "#f" ->
                             return $ LispBool n False
+                        ('#' : '\\' : [x]) ->
+                            return $ LispCharacter n x
                         ('#' : '\\' : xs) ->
                             analyseChar n xs
                         _ | buffer =~ "[0-9]+\\/[0-9]+" == buffer ->
@@ -111,17 +116,12 @@ finaliseRead n buffer =
 
 analyseChar :: Int -> String -> Except ParseError LispData
 analyseChar n str =
-    case readMaybe str :: Maybe Char of
-        Just c ->
+    case find (\(l, _) -> str == l) specialChars of
+        Just (_, c) ->
             return (LispCharacter n c)
-
-        Nothing ->
-            case find (\(l, _) -> str == l) specialChars of
-                Just (_, c) ->
-                    return (LispCharacter n c)
                 
-                Nothing ->
-                    throwE (UnknownChar n str)
+        Nothing ->
+            throwE (UnknownChar n str)
 
 specialChars :: [(String, Char)]
 specialChars =

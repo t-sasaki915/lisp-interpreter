@@ -18,6 +18,9 @@ data LispEnvData = LispFunction (Int -> [LispData] -> Eval)
 
 type LispEnv = [(String, LispEnvData)]
 
+initEnv :: LispEnv
+initEnv = []
+
 isVariable :: (String, LispEnvData) -> Bool
 isVariable (_, LispVariable _) = True
 isVariable _                   = False

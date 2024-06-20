@@ -4,6 +4,10 @@ module Util where
 
 import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Except (Except, ExceptT, except, runExcept)
+
+exceptT :: (Monad m) => Except a b -> ExceptT a m b
+exceptT = except . runExcept
 
 foldM' :: (Foldable f, Monad m) => b -> f a -> (b -> a -> m b) -> m b
 foldM' zero xs f = foldM f zero xs
