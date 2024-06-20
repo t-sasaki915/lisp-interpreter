@@ -1,5 +1,6 @@
 module ListExtra
     ( (!?)
+    , break'
     , dropRight
     , takeRight
     , replaceFirst
@@ -12,6 +13,9 @@ import Data.List (nub)
 (!?) :: [a] -> Int -> Maybe a
 (!?) xs i | i >= length xs = Nothing
           | otherwise      = Just (xs !! i)
+
+break' :: (a -> Bool) -> [a] -> ([a], [a])
+break' f xs = let (a, b) = break f xs in (a, tail b)
 
 dropRight :: Int -> [a] -> [a]
 dropRight n xs = reverse $ drop n (reverse xs)
