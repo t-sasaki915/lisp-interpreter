@@ -15,7 +15,7 @@ main = do
         tests = TestList
             [ TestLabel "Simple List Parsing"   parserTest1
             , TestLabel "Multiple List Parsing" parserTest2
-            , TestLabel "Type Recognisation"    parserTest3
+            , TestLabel "Type Recognition"      parserTest3
             , TestLabel "Nested List Parsing"   parserTest4
             , TestLabel "Comment Parsing"       parserTest5
             ]
