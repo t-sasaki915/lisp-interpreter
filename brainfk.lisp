@@ -45,20 +45,34 @@
     )
 )
 
+(defun while (progs)
+    (let ((val (aref *mem* *ptr*)))
+        (if (/= val 0)
+            (progn (eval progs) (while progs))
+        )
+    )
+)
+
 (defun parse-source (src)
     (map
         'list
         (lambda (c)
             (case c
-                (#\> '(inc-ptr))
-                (#\< '(dec-ptr))
-                (#\+ '(inc-val))
-                (#\- '(dec-val))
-                (#\. '(print-val))
+                (#\> "(inc-ptr)")
+                (#\< "(dec-ptr)")
+                (#\+ "(inc-val)")
+                (#\- "(dec-val)")
+                (#\. "(print-val)")
+                (#\[ "(while '(progn")
+                (#\] "))")
             )
         )
         src
     )
+)
+
+(defun evaluate-bf (progs)
+    (eval (read-from-string (format nil "(progn ~{~a~^ ~})" progs)))
 )
 
 (defun interpreter ()
@@ -68,7 +82,8 @@
         (if (not (equalp src "quit"))
             (let ((programs (parse-source src)))
                 (init)
-                (map 'nil 'eval programs)
+                (evaluate-bf programs)
+                (terpri)
                 (finish-output)
                 (interpreter)
             )
