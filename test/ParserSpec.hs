@@ -18,8 +18,8 @@ parserTest1 = parserTest
     "(abc def)"
     ( return
             [ LispList 8
-                [ LispSymbol 3 "abc"
-                , LispSymbol 7 "def"
+                [ LispSymbol 3 "ABC"
+                , LispSymbol 7 "DEF"
                 ]
             ]
     )
@@ -29,8 +29,8 @@ parserTest2 = parserTest
     "(abc def) (1 2 3 4) ()"
     ( return
         [ LispList 8
-            [ LispSymbol 3 "abc"
-            , LispSymbol 7 "def"
+            [ LispSymbol 3 "ABC"
+            , LispSymbol 7 "DEF"
             ]
         , LispList 18
             [ LispInteger 11 1
@@ -46,10 +46,10 @@ parserTest2 = parserTest
 
 parserTest3 :: Test
 parserTest3 = parserTest
-    "(aa 1 2.0 3/4 #\\a #\\Return #t #f \"hello\")"
+    "(aa 1 2.0 3/4 #\\a #\\Return #t #F \"hello\")"
     ( return
         [ LispList 40
-            [ LispSymbol 2 "aa"
+            [ LispSymbol 2 "AA"
             , LispInteger 4 1
             , LispReal 8 2.0
             , LispRational 12 3 4
@@ -119,13 +119,13 @@ parserTest6 = parserTest
     "(aa'aa) ''(a) '('1.0 '2 '16/20)"
     ( return
         [ LispList 6
-            [ LispSymbol 2 "aa"
-            , LispQuote (LispSymbol 5 "aa")
+            [ LispSymbol 2 "AA"
+            , LispQuote (LispSymbol 5 "AA")
             ]
         , LispQuote (
             LispQuote (
                 LispList 12
-                    [ LispSymbol 11 "a"
+                    [ LispSymbol 11 "A"
                     ]
             )
           )

@@ -5,6 +5,7 @@ import LispError (ParseError(..))
 import Util (break')
 
 import Control.Monad.Trans.Except (Except, throwE)
+import Data.Char (toUpper)
 import Data.Functor ((<&>))
 import Data.List (find)
 import Text.Read (readMaybe)
@@ -102,28 +103,33 @@ mkQuoteNest 0 d = d
 mkQuoteNest n d = mkQuoteNest (n - 1) (LispQuote d)
 
 finaliseRead :: Int -> String -> Except ParseError LispData
-finaliseRead n buffer =
-    case readMaybe buffer :: Maybe Int of
+finaliseRead n buf =
+    let buf' = map toUpper buf in
+    case readMaybe buf :: Maybe Int of
         Just z -> return $ LispInteger n z
         Nothing ->
-            case readMaybe buffer :: Maybe Float of
+            case readMaybe buf :: Maybe Float of
                 Just f -> return $ LispReal n f
                 Nothing ->
-                    case buffer of
+                    case buf of
+                        "#T" ->
+                            return $ LispBool n True
                         "#t" ->
                             return $ LispBool n True
+                        "#F" ->
+                            return $ LispBool n False
                         "#f" ->
                             return $ LispBool n False
                         ('#' : '\\' : [x]) ->
                             return $ LispCharacter n x
                         ('#' : '\\' : xs) ->
-                            analyseChar n xs
-                        _ | buffer =~ "[0-9]+\\/[0-9]+" == buffer ->
+                            analyseChar n (map toUpper xs)
+                        _ | buf =~ "[0-9]+\\/[0-9]+" == buf ->
                             return $
                                 uncurry (LispRational n)
-                                    (mapT read (break' (== '/') buffer))
+                                    (mapT read (break' (== '/') buf))
                         _ ->
-                            return $ LispSymbol n buffer
+                            return $ LispSymbol n buf'
     where mapT f (a, b) = (f a, f b)
 
 analyseChar :: Int -> String -> Except ParseError LispData
@@ -137,9 +143,9 @@ analyseChar n str =
 
 specialChars :: [(String, Char)]
 specialChars =
-    [ ("Backspace", '\b')
-    , ("Tab"      , '\t')
-    , ("Page"     , '\f')
-    , ("Linefeed" , '\n')
-    , ("Return"   , '\r')
+    [ ("BACKSPACE", '\b')
+    , ("TAB"      , '\t')
+    , ("PAGE"     , '\f')
+    , ("LINEFEED" , '\n')
+    , ("RETURN"   , '\r')
     ]

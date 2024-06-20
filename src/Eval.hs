@@ -38,10 +38,10 @@ eval = \case
     (LispList n []) ->
         return (LispBool n False)
 
-    (LispList _ [LispSymbol n "if"]) ->
-        throwE (SyntaxError n "if")
+    (LispList _ [LispSymbol n "IF"]) ->
+        throwE (SyntaxError n "IF")
 
-    (LispList _ (LispSymbol n "if" : args)) ->
+    (LispList _ (LispSymbol n "IF" : args)) ->
         case args of
             [test, body1, body2] -> do
                 cond <- eval test <&> treatAsLispBool
@@ -54,7 +54,7 @@ eval = \case
                         else return (LispBool n False)
 
             _ ->
-                throwE (SyntaxError n "if")
+                throwE (SyntaxError n "IF")
     
     (LispList _ [LispSymbol n label]) -> do
         f <- functionReference (LispSymbol n label)
