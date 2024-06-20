@@ -22,5 +22,5 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 
-*.lsp
-*.lisp
+test.lsp
+test.lisp
