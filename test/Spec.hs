@@ -19,6 +19,7 @@ main = do
             , TestLabel "Type Recognition"                parserTest3
             , TestLabel "Nested List Parsing"             parserTest4
             , TestLabel "Comment Parsing"                 parserTest5
+            , TestLabel "Quote Parsing"                   parserTest6
 
             , TestLabel "Simple If Evaluation"            evalTest1
             , TestLabel "Nested If Evaluation"            evalTest2

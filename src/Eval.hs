@@ -14,6 +14,9 @@ eval = \case
     (LispSymbol n s) ->
         variableReference (LispSymbol n s)
 
+    (LispQuote d) ->
+        return d
+
     (LispInteger n z) ->
         return (LispInteger n z)
 

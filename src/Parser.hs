@@ -10,30 +10,31 @@ import Data.List (find)
 import Text.Read (readMaybe)
 import Text.Regex.Posix ((=~))
 
-data Status = Start
-            | ReadingSymb String
-            | ReadingStr String
+data Status = Start Int
+            | ReadingSymb Int String
+            | ReadingStr Int String
             | Ignoring
 
 
 parse :: String -> Except ParseError [LispData]
-parse src = parse' src 0 [] Start <&> snd
+parse src = parse' src 0 [] (Start 0) <&> snd
 
 
 parse' :: String -> Int -> [LispData] -> Status ->
           Except ParseError (Int, [LispData])
 parse' str i parsed status | i >= length str =
     case status of
-        Start ->
+        (Start 0) ->
             return (i - 1, reverse parsed)
         _ ->
             throwE UnexpectedEOF
 
-parse' str i parsed Start =
+parse' str i parsed (Start nestDep) =
     case str !! i of
         '(' -> do
-            (i', lst) <- parse' str (i + 1) [] Start
-            parse' str (i' + 1) (LispList i' lst : parsed) Start
+            (i', lst) <- parse' str (i + 1) [] (Start 0)
+            let newd = mkQuoteNest nestDep (LispList i' lst)
+            parse' str (i' + 1) (newd : parsed) (Start 0)
 
         ')' ->
             return (i, reverse parsed)
@@ -42,52 +43,63 @@ parse' str i parsed Start =
             parse' str (i + 1) parsed Ignoring
 
         '"' ->
-            parse' str (i + 1) parsed (ReadingStr "")
+            parse' str (i + 1) parsed (ReadingStr nestDep "")
+
+        '\'' ->
+            parse' str (i + 1) parsed (Start (nestDep + 1))
 
         c | c `elem` [' ', '\t', '\n'] ->
-            parse' str (i + 1) parsed Start
+            parse' str (i + 1) parsed (Start nestDep)
 
         c ->
-            parse' str (i + 1) parsed (ReadingSymb [c])
+            parse' str (i + 1) parsed (ReadingSymb nestDep [c])
 
-parse' str i parsed (ReadingSymb buf) =
+parse' str i parsed (ReadingSymb nestDep buf) =
     case str !! i of
         '(' -> do
-            symb <- finaliseRead (i - 1) buf
-            (i', lst) <- parse' str (i + 1) [] Start
-            parse' str (i' + 1) (LispList i' lst : symb : parsed) Start
+            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
+            (i', lst) <- parse' str (i + 1) [] (Start 0)
+            parse' str (i' + 1) (LispList i' lst : symb : parsed) (Start 0)
 
         ')' -> do
-            symb <- finaliseRead (i - 1) buf
+            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
             return (i, reverse $ symb : parsed)
 
         ';' -> do
-            symb <- finaliseRead (i - 1) buf
+            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
             parse' str (i + 1) (symb : parsed) Ignoring
 
+        '\'' -> do
+            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
+            parse' str (i + 1) (symb : parsed) (Start 1)
+
         c | c `elem` [' ', '\t', '\n'] -> do
-            symb <- finaliseRead (i - 1) buf
-            parse' str (i + 1) (symb : parsed) Start
+            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
+            parse' str (i + 1) (symb : parsed) (Start 0)
 
         c ->
-            parse' str (i + 1) parsed (ReadingSymb (buf ++ [c]))
+            parse' str (i + 1) parsed (ReadingSymb nestDep (buf ++ [c]))
 
-parse' str i parsed (ReadingStr buf) =
+parse' str i parsed (ReadingStr nestDep buf) =
     case str !! i of
         '"' ->
-            parse' str (i + 1) (LispString i buf : parsed) Start
+            let lstr = mkQuoteNest nestDep (LispString i buf) in
+            parse' str (i + 1) (lstr : parsed) (Start 0)
 
         c ->
-            parse' str (i + 1) parsed (ReadingStr (buf ++ [c]))
+            parse' str (i + 1) parsed (ReadingStr nestDep (buf ++ [c]))
 
 parse' str i parsed Ignoring =
     case str !! i of
         '\n' ->
-            parse' str (i + 1) parsed Start
+            parse' str (i + 1) parsed (Start 0)
 
         _ ->
             parse' str (i + 1) parsed Ignoring
 
+mkQuoteNest :: Int -> LispData -> LispData
+mkQuoteNest 0 d = d
+mkQuoteNest n d = mkQuoteNest (n - 1) (LispQuote d)
 
 finaliseRead :: Int -> String -> Except ParseError LispData
 finaliseRead n buffer =
@@ -119,7 +131,7 @@ analyseChar n str =
     case find (\(l, _) -> str == l) specialChars of
         Just (_, c) ->
             return (LispCharacter n c)
-                
+
         Nothing ->
             throwE (UnknownChar n str)
 

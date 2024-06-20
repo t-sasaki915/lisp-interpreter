@@ -113,3 +113,28 @@ parserTest5 = parserTest
             ]
         ]
     )
+
+parserTest6 :: Test
+parserTest6 = parserTest
+    "(aa'aa) ''(a) '('1.0 '2 '16/20)"
+    ( return
+        [ LispList 6
+            [ LispSymbol 2 "aa"
+            , LispQuote (LispSymbol 5 "aa")
+            ]
+        , LispQuote (
+            LispQuote (
+                LispList 12
+                    [ LispSymbol 11 "a"
+                    ]
+            )
+          )
+        , LispQuote (
+            LispList 30
+                [ LispQuote (LispReal 19 1.0)
+                , LispQuote (LispInteger 22 2)
+                , LispQuote (LispRational 29 16 20)
+                ]
+          )
+        ]
+    )

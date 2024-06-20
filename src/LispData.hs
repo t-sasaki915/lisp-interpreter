@@ -10,6 +10,7 @@ data LispData = LispInteger Int Int
               | LispString Int String
               | LispCharacter Int Char
               | LispList Int [LispData]
+              | LispQuote LispData
               deriving (Eq, Show)
 
 treatAsLispBool :: LispData -> Bool
@@ -30,7 +31,8 @@ index (LispInteger n _)    = n
 index (LispReal n _)       = n
 index (LispRational n _ _) = n
 index (LispSymbol n _)     = n
-index (LispBool n _)    = n
+index (LispBool n _)       = n
 index (LispString n _)     = n
 index (LispCharacter n _)  = n
 index (LispList n _)       = n
+index (LispQuote d)        = index d
