@@ -1,8 +1,8 @@
 module Parser (ParseError(..), parse) where
 
-import ErrorTrace (Tracable(..))
-import LispDataType (LispDataType(..))
-import ListExtra (break')
+import LispData (LispData(..))
+import LispError (ParseError(..))
+import Util (break')
 
 import Control.Monad.Trans.Except (Except, throwE)
 import Data.Functor ((<&>))
@@ -10,31 +10,18 @@ import Data.List (find)
 import Text.Read (readMaybe)
 import Text.Regex.Posix ((=~))
 
-data ParseError = UnexpectedEOF
-                | UnknownChar Int String
-
-instance Tracable ParseError where
-    place UnexpectedEOF     = 0
-    place (UnknownChar n _) = n
-
-    title UnexpectedEOF     = "Unexpected end of file"
-    title (UnknownChar {})  = "Unknown character"
-
-    cause UnexpectedEOF     = ""
-    cause (UnknownChar _ a) = a
-
 data Status = Start
             | ReadingSymb String
             | ReadingStr String
             | Ignoring
 
 
-parse :: String -> Except ParseError [LispDataType]
+parse :: String -> Except ParseError [LispData]
 parse src = parse' src 0 [] Start <&> snd
 
 
-parse' :: String -> Int -> [LispDataType] -> Status ->
-          Except ParseError (Int, [LispDataType])
+parse' :: String -> Int -> [LispData] -> Status ->
+          Except ParseError (Int, [LispData])
 parse' str i parsed status | i >= length str =
     case status of
         Start ->
@@ -99,7 +86,7 @@ parse' str i parsed Ignoring =
             parse' str (i + 1) parsed Ignoring
 
 
-finaliseRead :: Int -> String -> Except ParseError LispDataType
+finaliseRead :: Int -> String -> Except ParseError LispData
 finaliseRead n buffer =
     case readMaybe buffer :: Maybe Int of
         Just z -> return $ LispInteger n z
@@ -109,9 +96,9 @@ finaliseRead n buffer =
                 Nothing ->
                     case buffer of
                         "#t" ->
-                            return $ LispBoolean n True
+                            return $ LispBool n True
                         "#f" ->
-                            return $ LispBoolean n False
+                            return $ LispBool n False
                         ('#' : '\\' : xs) ->
                             analyseChar n xs
                         _ | buffer =~ "[0-9]+\\/[0-9]+" == buffer ->
@@ -122,7 +109,7 @@ finaliseRead n buffer =
                             return $ LispSymbol n buffer
     where mapT f (a, b) = (f a, f b)
 
-analyseChar :: Int -> String -> Except ParseError LispDataType
+analyseChar :: Int -> String -> Except ParseError LispData
 analyseChar n str =
     case readMaybe str :: Maybe Char of
         Just c ->
