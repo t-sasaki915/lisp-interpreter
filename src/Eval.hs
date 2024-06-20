@@ -56,6 +56,14 @@ eval = \case
             _ ->
                 throwE (SyntaxError n "IF")
     
+    (LispList _ [LispSymbol n "QUOTE"]) ->
+        throwE (SyntaxError n "QUOTE")
+
+    (LispList _ (LispSymbol n "QUOTE" : args)) ->
+        case args of
+            [d] -> return d
+            _   -> throwE (SyntaxError n "QUOTE") 
+    
     (LispList _ [LispSymbol n label]) -> do
         f <- functionReference (LispSymbol n label)
         f n []

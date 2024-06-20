@@ -5,9 +5,10 @@ module EvalSpec where
 import Eval (eval)
 import LispData (LispData(..))
 import LispEnv (Eval, initEnv)
+import LispError (RuntimeError(..))
 import Parser (parse)
 
-import Control.Monad.Trans.Except (runExcept, runExceptT)
+import Control.Monad.Trans.Except (runExcept, runExceptT, throwE)
 import Control.Monad.Trans.State.Strict (runStateT)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.HUnit (Test(TestCase), assertEqual)
@@ -42,3 +43,33 @@ evalTest3 :: Test
 evalTest3 = evalTest
     "(if #f 1)"
     (return (LispBool 2 False))
+
+evalTest4 :: Test
+evalTest4 = evalTest
+    "(if #f)"
+    (throwE (SyntaxError 2 "IF"))
+
+evalTest5 :: Test
+evalTest5 = evalTest
+    "(if #T #T #T #T)"
+    (throwE (SyntaxError 2 "IF"))
+
+evalTest6 :: Test
+evalTest6 = evalTest
+    "(quote a)"
+    (return (LispSymbol 7 "A"))
+
+evalTest7 :: Test
+evalTest7 = evalTest
+    "(quote 'a)"
+    (return (LispQuote (LispSymbol 8 "A")))
+
+evalTest8 :: Test
+evalTest8 = evalTest
+    "(quote 'a 'a)"
+    (throwE (SyntaxError 5 "QUOTE"))
+
+evalTest9 :: Test
+evalTest9 = evalTest
+    "(quote)"
+    (throwE (SyntaxError 5 "QUOTE"))
