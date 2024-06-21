@@ -29,7 +29,9 @@ library
       LispDataExtra
       LispEnv
       LispError
+      LispFunction
       LispInterpreter
+      LispMaths
       LispSyntax
       Parser
       Util

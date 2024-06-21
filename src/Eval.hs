@@ -22,8 +22,8 @@ eval = \case
     (LispReal n r) ->
         return (LispReal n r)
 
-    (LispRational n a b) ->
-        return (LispRational n a b)
+    (LispRational n r) ->
+        return (LispRational n r)
 
     (LispBool n b) ->
         return (LispBool n b)

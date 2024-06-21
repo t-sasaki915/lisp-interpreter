@@ -7,6 +7,7 @@ import LispError (ParseError(..))
 import Parser (parse)
 
 import Control.Monad.Trans.Except (Except, runExcept)
+import Data.Ratio ((%))
 import Test.HUnit (Test(TestCase), assertEqual)
 
 parserTest :: String -> Except ParseError [LispData] -> Test
@@ -52,7 +53,7 @@ parserTest3 = parserTest
             [ LispSymbol 2 "AA"
             , LispInteger 4 1
             , LispReal 8 2.0
-            , LispRational 12 3 4
+            , LispRational 12 (3 % 4)
             , LispCharacter 16 'a'
             , LispCharacter 25 '\r'
             , LispBool 28 True
@@ -133,7 +134,7 @@ parserTest6 = parserTest
             LispList 30
                 [ LispQuote (LispReal 19 1.0)
                 , LispQuote (LispInteger 22 2)
-                , LispQuote (LispRational 29 16 20)
+                , LispQuote (LispRational 29 (16 % 20))
                 ]
           )
         ]

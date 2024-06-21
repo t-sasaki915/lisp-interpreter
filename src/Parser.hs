@@ -8,6 +8,7 @@ import Control.Monad.Trans.Except (Except, throwE)
 import Data.Char (toUpper)
 import Data.Functor ((<&>))
 import Data.List (find)
+import Data.Ratio ((%))
 import Text.Read (readMaybe)
 import Text.Regex.Posix ((=~))
 
@@ -125,8 +126,8 @@ finaliseRead n buf =
                         ('#' : '\\' : xs) ->
                             analyseChar n (map toUpper xs)
                         _ | buf =~ "[0-9]+\\/[0-9]+" == buf ->
-                            return $
-                                uncurry (LispRational n)
+                            return $ LispRational n $
+                                uncurry (%)
                                     (mapT read (break' (== '/') buf))
                         _ ->
                             return $ LispSymbol n buf'

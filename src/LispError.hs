@@ -27,6 +27,7 @@ data RuntimeError = UndefinedVariable Int String
                   | UndefinedFunction Int String
                   | TooManyArguments Int String Int
                   | TooFewArguments Int String Int
+                  | IncompatibleType Int String String
                   | IllegalFunctionCall Int
                   | IllegalBehaviour Int
                   deriving (Eq, Show)
@@ -36,6 +37,7 @@ instance LispError RuntimeError where
     index (UndefinedFunction a _)  = a
     index (TooManyArguments a _ _) = a
     index (TooFewArguments a _ _)  = a
+    index (IncompatibleType a _ _) = a
     index (IllegalFunctionCall a)  = a
     index (IllegalBehaviour a)     = a
 
@@ -43,6 +45,7 @@ instance LispError RuntimeError where
     title (UndefinedFunction {})   = "Undefined function"
     title (TooManyArguments {})    = "Too many arguments"
     title (TooFewArguments {})     = "Too few arguments"
+    title (IncompatibleType {})    = "Incompatible type"
     title (IllegalFunctionCall {}) = "Illegal function call"
     title (IllegalBehaviour {})    = "Illegal interpreter behaviour"
 
@@ -52,6 +55,8 @@ instance LispError RuntimeError where
         a ++ " requires only " ++ show b ++ " arguments."
     cause (TooFewArguments _ a b) =
         a ++ " requires at least " ++ show b ++ " arguments."
+    cause (IncompatibleType _ a b) =
+        a ++ " and " ++ b ++ " are incompatible."
     cause (IllegalFunctionCall _)  = ""
     cause (IllegalBehaviour _)     = ""
 
