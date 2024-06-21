@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
+{-# LANGUAGE LambdaCase #-}
 
 module LispMaths where
 
@@ -13,10 +14,15 @@ import Data.Ratio ((%), numerator, denominator)
 
 lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
-    [ ("*", LispProcedure lispMultiple)
-    , ("+", LispProcedure lispAddition)
-    , ("-", LispProcedure lispSubtract)
-    , ("/", LispProcedure lispDivision)
+    [ ("*",  LispProcedure lispMultiple)
+    , ("+",  LispProcedure lispAddition)
+    , ("-",  LispProcedure lispSubtract)
+    , ("/",  LispProcedure lispDivision)
+    , ("<",  LispProcedure lispLessThan)
+    , ("<=", LispProcedure lispLessThanOrEq)
+    , ("=",  LispProcedure lispNumberEq)
+    , (">",  LispProcedure lispGreaterThan)
+    , (">=", LispProcedure lispGreaterThanOrEq)
     ]
 
 finaliseRatCalc :: Int -> Rational -> LispData
@@ -95,3 +101,88 @@ lispDivision ind args
             let first = head vars % 1
                 fracs = map (1 %) (tail vars)
             return (finaliseRatCalc ind (product (first : fracs)))
+
+lispLessThan :: Evalable
+lispLessThan ind args
+    | null args        = throwE (TooFewArguments ind "<" 1)
+    | length args == 1 = return (LispBool ind True)
+    | otherwise        = do
+        vars <- treatAsLispReals args
+        let res = foldl
+                    (\case
+                        False -> const False
+                        True  -> \case
+                            (0, _)   -> True
+                            (n, var) -> (vars !! (n - 1)) < var
+                    )
+                    True
+                    (zip [0..] vars)
+        return (LispBool ind res)
+
+lispLessThanOrEq :: Evalable
+lispLessThanOrEq ind args
+    | null args        = throwE (TooFewArguments ind "<=" 1)
+    | length args == 1 = return (LispBool ind True)
+    | otherwise        = do
+        vars <- treatAsLispReals args
+        let res = foldl
+                    (\case
+                        False -> const False
+                        True  -> \case
+                            (0, _)   -> True
+                            (n, var) -> (vars !! (n - 1)) <= var
+                    )
+                    True
+                    (zip [0..] vars)
+        return (LispBool ind res)
+
+lispNumberEq :: Evalable
+lispNumberEq ind args
+    | null args        = throwE (TooFewArguments ind "=" 1)
+    | length args == 1 = return (LispBool ind True)
+    | otherwise        = do
+        vars <- treatAsLispReals args
+        let res = foldl
+                    (\case
+                        False -> const False
+                        True  -> \case
+                            (0, _)   -> True
+                            (n, var) -> (vars !! (n - 1)) == var
+                    )
+                    True
+                    (zip [0..] vars)
+        return (LispBool ind res)
+
+lispGreaterThan :: Evalable
+lispGreaterThan ind args
+    | null args        = throwE (TooFewArguments ind ">" 1)
+    | length args == 1 = return (LispBool ind True)
+    | otherwise        = do
+        vars <- treatAsLispReals args
+        let res = foldl
+                    (\case
+                        False -> const False
+                        True  -> \case
+                            (0, _)   -> True
+                            (n, var) -> (vars !! (n - 1)) > var
+                    )
+                    True
+                    (zip [0..] vars)
+        return (LispBool ind res)
+
+lispGreaterThanOrEq :: Evalable
+lispGreaterThanOrEq ind args
+    | null args        = throwE (TooFewArguments ind ">=" 1)
+    | length args == 1 = return (LispBool ind True)
+    | otherwise        = do
+        vars <- treatAsLispReals args
+        let res = foldl
+                    (\case
+                        False -> const False
+                        True  -> \case
+                            (0, _)   -> True
+                            (n, var) -> (vars !! (n - 1)) >= var
+                    )
+                    True
+                    (zip [0..] vars)
+        return (LispBool ind res)

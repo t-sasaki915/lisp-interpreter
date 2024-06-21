@@ -14,6 +14,15 @@ import Data.Ratio ((%))
 import System.IO.Unsafe (unsafePerformIO)
 import Test.HUnit (Test(TestCase), assertEqual)
 
+integer :: Integer -> LispData
+integer = LispInteger 0
+real :: Float -> LispData
+real = LispReal 0
+rational :: Rational -> LispData
+rational = LispRational 0
+boolean :: Bool -> LispData
+boolean = LispBool 0
+
 lispMathsTest :: Evalable -> [LispData] -> Eval -> Test
 lispMathsTest f args e =
     let
@@ -26,140 +35,395 @@ lispMathsTest f args e =
 
 lispMultipleTest1 :: Test
 lispMultipleTest1 = lispMathsTest lispMultiple
-    [LispInteger 0 1, LispInteger 0 2, LispInteger 0 3]
-    (return (LispInteger 0 6))
+    [integer 1, integer 2, integer 3]
+    (return (integer 6))
 
 lispMultipleTest2 :: Test
 lispMultipleTest2 = lispMathsTest lispMultiple
-    [LispInteger 0 1, LispInteger 0 2]
-    (return (LispInteger 0 2))
+    [integer 1, integer 2]
+    (return (integer 2))
 
 lispMultipleTest3 :: Test
 lispMultipleTest3 = lispMathsTest lispMultiple
-    [LispInteger 0 1]
-    (return (LispInteger 0 1))
+    [integer 1]
+    (return (integer 1))
 
 lispMultipleTest4 :: Test
 lispMultipleTest4 = lispMathsTest lispMultiple
     []
-    (return (LispInteger 0 1))
+    (return (integer 1))
 
 lispMultipleTest5 :: Test
 lispMultipleTest5 = lispMathsTest lispMultiple
-    [LispInteger 0 1234567890123456789, LispInteger 0 9876543210987654321]
-    (return (LispInteger 0 12193263113702179522374638011112635269))
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (integer 12193263113702179522374638011112635269))
 
 lispMultipleTest6 :: Test
 lispMultipleTest6 = lispMathsTest lispMultiple
-    [LispReal 0 1.3, LispInteger 0 (-5)]
-    (return (LispReal 0 (-6.5)))
+    [real 1.3, integer (-5)]
+    (return (real (-6.5)))
 
 lispMultipleTest7 :: Test
 lispMultipleTest7 = lispMathsTest lispMultiple
-    [LispRational 0 (3 % 4), LispRational 0 (7 % 9)]
-    (return (LispRational 0 (7 % 12)))
+    [rational (3 % 4), rational (7 % 9)]
+    (return (rational (7 % 12)))
 
 lispAdditionTest1 :: Test
 lispAdditionTest1 = lispMathsTest lispAddition
-    [LispInteger 0 1, LispInteger 0 2, LispInteger 0 3]
-    (return (LispInteger 0 6))
+    [integer 1, integer 2, integer 3]
+    (return (integer 6))
 
 lispAdditionTest2 :: Test
 lispAdditionTest2 = lispMathsTest lispAddition
-    [LispInteger 0 1, LispInteger 0 2]
-    (return (LispInteger 0 3))
+    [integer 1, integer 2]
+    (return (integer 3))
 
 lispAdditionTest3 :: Test
 lispAdditionTest3 = lispMathsTest lispAddition
-    [LispInteger 0 1]
-    (return (LispInteger 0 1))
+    [integer 1]
+    (return (integer 1))
 
 lispAdditionTest4 :: Test
 lispAdditionTest4 = lispMathsTest lispAddition
     []
-    (return (LispInteger 0 0))
+    (return (integer 0))
 
 lispAdditionTest5 :: Test
 lispAdditionTest5 = lispMathsTest lispAddition
-    [LispInteger 0 1234567890123456789, LispInteger 0 9876543210987654321]
-    (return (LispInteger 0 11111111101111111110))
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (integer 11111111101111111110))
 
 lispAdditionTest6 :: Test
 lispAdditionTest6 = lispMathsTest lispAddition
-    [LispReal 0 1.3, LispInteger 0 (-5)]
-    (return (LispReal 0 (-3.7)))
+    [real 1.3, integer (-5)]
+    (return (real (-3.7)))
 
 lispAdditionTest7 :: Test
 lispAdditionTest7 = lispMathsTest lispAddition
-    [LispRational 0 (3 % 4), LispRational 0 (7 % 9)]
-    (return (LispRational 0 (55 % 36)))
+    [rational (3 % 4), rational (7 % 9)]
+    (return (rational (55 % 36)))
 
 lispSubtractTest1 :: Test
 lispSubtractTest1 = lispMathsTest lispSubtract
-    [LispInteger 0 1, LispInteger 0 2, LispInteger 0 3]
-    (return (LispInteger 0 (-4)))
+    [integer 1, integer 2, integer 3]
+    (return (integer (-4)))
 
 lispSubtractTest2 :: Test
 lispSubtractTest2 = lispMathsTest lispSubtract
-    [LispInteger 0 1, LispInteger 0 2]
-    (return (LispInteger 0 (-1)))
+    [integer 1, integer 2]
+    (return (integer (-1)))
 
 lispSubtractTest3 :: Test
 lispSubtractTest3 = lispMathsTest lispSubtract
-    [LispInteger 0 1]
-    (return (LispInteger 0 (-1)))
+    [integer 1]
+    (return (integer (-1)))
 
 lispSubtractTest4 :: Test
 lispSubtractTest4 = lispMathsTest lispSubtract
-    [LispInteger 0 1234567890123456789, LispInteger 0 9876543210987654321]
-    (return (LispInteger 0 (-8641975320864197532)))
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (integer (-8641975320864197532)))
 
 lispSubtractTest5 :: Test
 lispSubtractTest5 = lispMathsTest lispSubtract
-    [LispReal 0 1.3, LispInteger 0 (-5)]
-    (return (LispReal 0 6.3))
+    [real 1.3, integer (-5)]
+    (return (real 6.3))
 
 lispSubtractTest6 :: Test
 lispSubtractTest6 = lispMathsTest lispSubtract
-    [LispRational 0 (3 % 4), LispRational 0 (7 % 9)]
-    (return (LispRational 0 (- (1 % 36))))
+    [rational (3 % 4), rational (7 % 9)]
+    (return (rational (- (1 % 36))))
 
 lispDivisionTest1 :: Test
 lispDivisionTest1 = lispMathsTest lispDivision
-    [LispInteger 0 10]
-    (return (LispRational 0 (1 % 10)))
+    [integer 10]
+    (return (rational (1 % 10)))
 
 lispDivisionTest2 :: Test
 lispDivisionTest2 = lispMathsTest lispDivision
-    [LispReal 0 10.0]
-    (return (LispReal 0 0.1))
+    [real 10.0]
+    (return (real 0.1))
 
 lispDivisionTest3 :: Test
 lispDivisionTest3 = lispMathsTest lispDivision
-    [LispInteger 0 10, LispInteger 0 2]
-    (return (LispInteger 0 5))
+    [integer 10, integer 2]
+    (return (integer 5))
 
 lispDivisionTest4 :: Test
 lispDivisionTest4 = lispMathsTest lispDivision
-    [LispInteger 0 2, LispInteger 0 10]
-    (return (LispRational 0 (1 % 5)))
+    [integer 2, integer 10]
+    (return (rational (1 % 5)))
 
 lispDivisionTest5 :: Test
 lispDivisionTest5 = lispMathsTest lispDivision
-    [LispInteger 0 100, LispInteger 0 2, LispInteger 0 5, LispInteger 0 2]
-    (return (LispInteger 0 5))
+    [integer 100, integer 2, integer 5, integer 2]
+    (return (integer 5))
 
 lispDivisionTest6 :: Test
 lispDivisionTest6 = lispMathsTest lispDivision
-    [LispInteger 0 1234567890123456789, LispInteger 0 9876543210987654321]
-    (return (LispRational 0 (13717421 % 109739369)))
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (rational (13717421 % 109739369)))
 
 lispDivisionTest7 :: Test
 lispDivisionTest7 = lispMathsTest lispDivision
-    [LispReal 0 1.3, LispInteger 0 (-5)]
-    (return (LispReal 0 (-0.26)))
+    [real 1.3, integer (-5)]
+    (return (real (-0.26)))
 
 lispDivisionTest8 :: Test
 lispDivisionTest8 = lispMathsTest lispDivision
-    [LispRational 0 (3 % 4), LispRational 0 (7 % 9)]
-    (return (LispRational 0 (27 % 28)))
+    [rational (3 % 4), rational (7 % 9)]
+    (return (rational (27 % 28)))
+
+lispLessThanTest1 :: Test
+lispLessThanTest1 = lispMathsTest lispLessThan
+    [integer 1, integer 2]
+    (return (boolean True))
+
+lispLessThanTest2 :: Test
+lispLessThanTest2 = lispMathsTest lispLessThan
+    [integer 2, integer 1]
+    (return (boolean False))
+
+lispLessThanTest3 :: Test
+lispLessThanTest3 = lispMathsTest lispLessThan
+    [integer 2, real 2.001]
+    (return (boolean True))
+
+lispLessThanTest4 :: Test
+lispLessThanTest4 = lispMathsTest lispLessThan
+    [integer 2, integer 2]
+    (return (boolean False))
+
+lispLessThanTest5 :: Test
+lispLessThanTest5 = lispMathsTest lispLessThan
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (boolean True))
+
+lispLessThanTest6 :: Test
+lispLessThanTest6 = lispMathsTest lispLessThan
+    [integer 1, integer 2, integer 3, integer 4, integer 5]
+    (return (boolean True))
+
+lispLessThanTest7 :: Test
+lispLessThanTest7 = lispMathsTest lispLessThan
+    [integer 1, integer 2, integer 4, integer 3, integer 5]
+    (return (boolean False))
+
+lispLessThanTest8 :: Test
+lispLessThanTest8 = lispMathsTest lispLessThan
+    [integer 1, integer 2, integer 4, integer 4, integer 5]
+    (return (boolean False))
+
+lispLessThanTest9 :: Test
+lispLessThanTest9 = lispMathsTest lispLessThan
+    [rational (3 % 4), rational (7 % 9)]
+    (return (boolean True))
+
+lispLessThanTest10 :: Test
+lispLessThanTest10 = lispMathsTest lispLessThan
+    [integer 5]
+    (return (boolean True))
+
+lispLessThanOrEqTest1 :: Test
+lispLessThanOrEqTest1 = lispMathsTest lispLessThanOrEq
+    [integer 1, integer 2]
+    (return (boolean True))
+
+lispLessThanOrEqTest2 :: Test
+lispLessThanOrEqTest2 = lispMathsTest lispLessThanOrEq
+    [integer 2, integer 1]
+    (return (boolean False))
+
+lispLessThanOrEqTest3 :: Test
+lispLessThanOrEqTest3 = lispMathsTest lispLessThanOrEq
+    [integer 2, real 2.001]
+    (return (boolean True))
+
+lispLessThanOrEqTest4 :: Test
+lispLessThanOrEqTest4 = lispMathsTest lispLessThanOrEq
+    [integer 2, integer 2]
+    (return (boolean True))
+
+lispLessThanOrEqTest5 :: Test
+lispLessThanOrEqTest5 = lispMathsTest lispLessThanOrEq
+    [integer 1234567890123456789, integer 9876543210987654321]
+    (return (boolean True))
+
+lispLessThanOrEqTest6 :: Test
+lispLessThanOrEqTest6 = lispMathsTest lispLessThanOrEq
+    [integer 1, integer 2, integer 3, integer 4, integer 5]
+    (return (boolean True))
+
+lispLessThanOrEqTest7 :: Test
+lispLessThanOrEqTest7 = lispMathsTest lispLessThanOrEq
+    [integer 1, integer 2, integer 4, integer 3, integer 5]
+    (return (boolean False))
+
+lispLessThanOrEqTest8 :: Test
+lispLessThanOrEqTest8 = lispMathsTest lispLessThanOrEq
+    [integer 1, integer 2, integer 4, integer 4, integer 5]
+    (return (boolean True))
+
+lispLessThanOrEqTest9 :: Test
+lispLessThanOrEqTest9 = lispMathsTest lispLessThanOrEq
+    [rational (3 % 4), rational (7 % 9)]
+    (return (boolean True))
+
+lispLessThanOrEqTest10 :: Test
+lispLessThanOrEqTest10 = lispMathsTest lispLessThanOrEq
+    [integer 5]
+    (return (boolean True))
+
+lispNumberEqTest1 :: Test
+lispNumberEqTest1 = lispMathsTest lispNumberEq
+    [integer 1, integer 2]
+    (return (boolean False))
+
+lispNumberEqTest2 :: Test
+lispNumberEqTest2 = lispMathsTest lispNumberEq
+    [integer 2, integer 1]
+    (return (boolean False))
+
+lispNumberEqTest3 :: Test
+lispNumberEqTest3 = lispMathsTest lispNumberEq
+    [integer 2, real 2.001]
+    (return (boolean False))
+
+lispNumberEqTest4 :: Test
+lispNumberEqTest4 = lispMathsTest lispNumberEq
+    [integer 2, integer 2]
+    (return (boolean True))
+
+lispNumberEqTest5 :: Test
+lispNumberEqTest5 = lispMathsTest lispNumberEq
+    [integer 2, real 2.0]
+    (return (boolean True))
+
+lispNumberEqTest6 :: Test
+lispNumberEqTest6 = lispMathsTest lispNumberEq
+    [real 0.0, real (-0.0)]
+    (return (boolean True))
+
+lispNumberEqTest7 :: Test
+lispNumberEqTest7 = lispMathsTest lispNumberEq
+    [integer 1, integer 2, integer 3, integer 4, integer 5]
+    (return (boolean False))
+
+lispNumberEqTest8 :: Test
+lispNumberEqTest8 = lispMathsTest lispNumberEq
+    [integer 4, integer 4, integer 4, integer 3, integer 4]
+    (return (boolean False))
+
+lispNumberEqTest9 :: Test
+lispNumberEqTest9 = lispMathsTest lispNumberEq
+    [integer 4, integer 4, integer 4, integer 4, integer 4]
+    (return (boolean True))
+
+lispNumberEqTest10 :: Test
+lispNumberEqTest10 = lispMathsTest lispNumberEq
+    [integer 4, integer 4, integer 4, real 4.0, integer 4]
+    (return (boolean True))
+
+lispNumberEqTest11 :: Test
+lispNumberEqTest11 = lispMathsTest lispNumberEq
+    [integer 5]
+    (return (boolean True))
+
+lispGreaterThanTest1 :: Test
+lispGreaterThanTest1 = lispMathsTest lispGreaterThan
+    [integer 2, integer 1]
+    (return (boolean True))
+
+lispGreaterThanTest2 :: Test
+lispGreaterThanTest2 = lispMathsTest lispGreaterThan
+    [integer 1, integer 2]
+    (return (boolean False))
+
+lispGreaterThanTest3 :: Test
+lispGreaterThanTest3 = lispMathsTest lispGreaterThan
+    [real 2.001, integer 2]
+    (return (boolean True))
+
+lispGreaterThanTest4 :: Test
+lispGreaterThanTest4 = lispMathsTest lispGreaterThan
+    [integer 2, integer 2]
+    (return (boolean False))
+
+lispGreaterThanTest5 :: Test
+lispGreaterThanTest5 = lispMathsTest lispGreaterThan
+    [integer 9876543210987654321, integer 1234567890123456789]
+    (return (boolean True))
+
+lispGreaterThanTest6 :: Test
+lispGreaterThanTest6 = lispMathsTest lispGreaterThan
+    [integer 5, integer 4, integer 3, integer 2, integer 1]
+    (return (boolean True))
+
+lispGreaterThanTest7 :: Test
+lispGreaterThanTest7 = lispMathsTest lispGreaterThan
+    [integer 5, integer 3, integer 4, integer 2, integer 1]
+    (return (boolean False))
+
+lispGreaterThanTest8 :: Test
+lispGreaterThanTest8 = lispMathsTest lispGreaterThan
+    [integer 5, integer 4, integer 4, integer 2, integer 1]
+    (return (boolean False))
+
+lispGreaterThanTest9 :: Test
+lispGreaterThanTest9 = lispMathsTest lispGreaterThan
+    [rational (7 % 9), rational (3 % 4)]
+    (return (boolean True))
+
+lispGreaterThanTest10 :: Test
+lispGreaterThanTest10 = lispMathsTest lispGreaterThan
+    [integer 5]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest1 :: Test
+lispGreaterThanOrEqTest1 = lispMathsTest lispGreaterThanOrEq
+    [integer 2, integer 1]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest2 :: Test
+lispGreaterThanOrEqTest2 = lispMathsTest lispGreaterThanOrEq
+    [integer 1, integer 2]
+    (return (boolean False))
+
+lispGreaterThanOrEqTest3 :: Test
+lispGreaterThanOrEqTest3 = lispMathsTest lispGreaterThanOrEq
+    [real 2.001, integer 2]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest4 :: Test
+lispGreaterThanOrEqTest4 = lispMathsTest lispGreaterThanOrEq
+    [integer 2, integer 2]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest5 :: Test
+lispGreaterThanOrEqTest5 = lispMathsTest lispGreaterThanOrEq
+    [integer 9876543210987654321, integer 1234567890123456789]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest6 :: Test
+lispGreaterThanOrEqTest6 = lispMathsTest lispGreaterThanOrEq
+    [integer 5, integer 4, integer 3, integer 2, integer 1]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest7 :: Test
+lispGreaterThanOrEqTest7 = lispMathsTest lispGreaterThanOrEq
+    [integer 5, integer 3, integer 4, integer 2, integer 1]
+    (return (boolean False))
+
+lispGreaterThanOrEqTest8 :: Test
+lispGreaterThanOrEqTest8 = lispMathsTest lispGreaterThanOrEq
+    [integer 5, integer 4, integer 4, integer 2, integer 1]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest9 :: Test
+lispGreaterThanOrEqTest9 = lispMathsTest lispGreaterThanOrEq
+    [rational (7 % 9), rational (3 % 4)]
+    (return (boolean True))
+
+lispGreaterThanOrEqTest10 :: Test
+lispGreaterThanOrEqTest10 = lispMathsTest lispGreaterThanOrEq
+    [integer 5]
+    (return (boolean True))

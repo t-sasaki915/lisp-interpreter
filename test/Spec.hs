@@ -60,4 +60,55 @@ main = do
             , TestLabel "Lisp Division Test 6"                lispDivisionTest6
             , TestLabel "Lisp Division Test 7"                lispDivisionTest7
             , TestLabel "Lisp Division Test 8"                lispDivisionTest8
+            , TestLabel "Lisp Less Than Test 1"               lispLessThanTest1
+            , TestLabel "Lisp Less Than Test 2"               lispLessThanTest2
+            , TestLabel "Lisp Less Than Test 3"               lispLessThanTest3
+            , TestLabel "Lisp Less Than Test 4"               lispLessThanTest4
+            , TestLabel "Lisp Less Than Test 5"               lispLessThanTest5
+            , TestLabel "Lisp Less Than Test 6"               lispLessThanTest6
+            , TestLabel "Lisp Less Than Test 7"               lispLessThanTest7
+            , TestLabel "Lisp Less Than Test 8"               lispLessThanTest8
+            , TestLabel "Lisp Less Than Test 9"               lispLessThanTest9
+            , TestLabel "Lisp Less Than Test 10"              lispLessThanTest10
+            , TestLabel "Lisp Less Than Or Eq Test 1"         lispLessThanOrEqTest1
+            , TestLabel "Lisp Less Than Or Eq Test 2"         lispLessThanOrEqTest2
+            , TestLabel "Lisp Less Than Or Eq Test 3"         lispLessThanOrEqTest3
+            , TestLabel "Lisp Less Than Or Eq Test 4"         lispLessThanOrEqTest4
+            , TestLabel "Lisp Less Than Or Eq Test 5"         lispLessThanOrEqTest5
+            , TestLabel "Lisp Less Than Or Eq Test 6"         lispLessThanOrEqTest6
+            , TestLabel "Lisp Less Than Or Eq Test 7"         lispLessThanOrEqTest7
+            , TestLabel "Lisp Less Than Or Eq Test 8"         lispLessThanOrEqTest8
+            , TestLabel "Lisp Less Than Or Eq Test 9"         lispLessThanOrEqTest9
+            , TestLabel "Lisp Less Than Or Eq Test 10"        lispLessThanOrEqTest10
+            , TestLabel "Lisp Number Equal Test 1"            lispNumberEqTest1
+            , TestLabel "Lisp Number Equal Test 2"            lispNumberEqTest2
+            , TestLabel "Lisp Number Equal Test 3"            lispNumberEqTest3
+            , TestLabel "Lisp Number Equal Test 4"            lispNumberEqTest4
+            , TestLabel "Lisp Number Equal Test 5"            lispNumberEqTest5
+            , TestLabel "Lisp Number Equal Test 6"            lispNumberEqTest6
+            , TestLabel "Lisp Number Equal Test 7"            lispNumberEqTest7
+            , TestLabel "Lisp Number Equal Test 8"            lispNumberEqTest8
+            , TestLabel "Lisp Number Equal Test 9"            lispNumberEqTest9
+            , TestLabel "Lisp Number Equal Test 10"           lispNumberEqTest10
+            , TestLabel "Lisp Number Equal Test 11"           lispNumberEqTest11
+            , TestLabel "Lisp Greater Than Test 1"            lispGreaterThanTest1
+            , TestLabel "Lisp Greater Than Test 2"            lispGreaterThanTest2
+            , TestLabel "Lisp Greater Than Test 3"            lispGreaterThanTest3
+            , TestLabel "Lisp Greater Than Test 4"            lispGreaterThanTest4
+            , TestLabel "Lisp Greater Than Test 5"            lispGreaterThanTest5
+            , TestLabel "Lisp Greater Than Test 6"            lispGreaterThanTest6
+            , TestLabel "Lisp Greater Than Test 7"            lispGreaterThanTest7
+            , TestLabel "Lisp Greater Than Test 8"            lispGreaterThanTest8
+            , TestLabel "Lisp Greater Than Test 9"            lispGreaterThanTest9
+            , TestLabel "Lisp Greater Than Test 10"           lispGreaterThanTest10
+            , TestLabel "Lisp Greater Than Or Eq Test 1"      lispGreaterThanOrEqTest1
+            , TestLabel "Lisp Greater Than Or Eq Test 2"      lispGreaterThanOrEqTest2
+            , TestLabel "Lisp Greater Than Or Eq Test 3"      lispGreaterThanOrEqTest3
+            , TestLabel "Lisp Greater Than Or Eq Test 4"      lispGreaterThanOrEqTest4
+            , TestLabel "Lisp Greater Than Or Eq Test 5"      lispGreaterThanOrEqTest5
+            , TestLabel "Lisp Greater Than Or Eq Test 6"      lispGreaterThanOrEqTest6
+            , TestLabel "Lisp Greater Than Or Eq Test 7"      lispGreaterThanOrEqTest7
+            , TestLabel "Lisp Greater Than Or Eq Test 8"      lispGreaterThanOrEqTest8
+            , TestLabel "Lisp Greater Than Or Eq Test 9"      lispGreaterThanOrEqTest9
+            , TestLabel "Lisp Greater Than Or Eq Test 10"     lispGreaterThanOrEqTest10
             ]
