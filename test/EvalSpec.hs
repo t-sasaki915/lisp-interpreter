@@ -4,8 +4,9 @@ module EvalSpec where
 
 import Eval (eval)
 import LispData (LispData(..))
-import LispEnv (Eval, initEnv)
+import LispEnv (Eval)
 import LispError (RuntimeError(..))
+import LispInterpreter (initEnv)
 import Parser (parse)
 
 import Control.Monad.Trans.Except (runExcept, runExceptT, throwE)
@@ -47,12 +48,12 @@ evalTest3 = evalTest
 evalTest4 :: Test
 evalTest4 = evalTest
     "(if #f)"
-    (throwE (SyntaxError 2 "IF"))
+    (throwE (TooFewArguments 2 "IF" 2))
 
 evalTest5 :: Test
 evalTest5 = evalTest
     "(if #T #T #T #T)"
-    (throwE (SyntaxError 2 "IF"))
+    (throwE (TooManyArguments 2 "IF" 3))
 
 evalTest6 :: Test
 evalTest6 = evalTest
@@ -67,9 +68,9 @@ evalTest7 = evalTest
 evalTest8 :: Test
 evalTest8 = evalTest
     "(quote 'a 'a)"
-    (throwE (SyntaxError 5 "QUOTE"))
+    (throwE (TooManyArguments 5 "QUOTE" 1))
 
 evalTest9 :: Test
 evalTest9 = evalTest
     "(quote)"
-    (throwE (SyntaxError 5 "QUOTE"))
+    (throwE (TooFewArguments 5 "QUOTE" 1))

@@ -25,29 +25,35 @@ instance LispError ParseError where
 
 data RuntimeError = UndefinedVariable Int String
                   | UndefinedFunction Int String
-                  | SyntaxError Int String
+                  | TooManyArguments Int String Int
+                  | TooFewArguments Int String Int
                   | IllegalFunctionCall Int
                   | IllegalBehaviour Int
                   deriving (Eq, Show)
 
 instance LispError RuntimeError where
-    index (UndefinedVariable a _) = a
-    index (UndefinedFunction a _) = a
-    index (SyntaxError a _)       = a
-    index (IllegalFunctionCall a) = a
-    index (IllegalBehaviour a)    = a
+    index (UndefinedVariable a _)  = a
+    index (UndefinedFunction a _)  = a
+    index (TooManyArguments a _ _) = a
+    index (TooFewArguments a _ _)  = a
+    index (IllegalFunctionCall a)  = a
+    index (IllegalBehaviour a)     = a
 
     title (UndefinedVariable {})   = "Undefined variable"
     title (UndefinedFunction {})   = "Undefined function"
-    title (SyntaxError {})         = "Syntax error"
+    title (TooManyArguments {})    = "Too many arguments"
+    title (TooFewArguments {})     = "Too few arguments"
     title (IllegalFunctionCall {}) = "Illegal function call"
     title (IllegalBehaviour {})    = "Illegal interpreter behaviour"
 
-    cause (UndefinedVariable _ a) = a
-    cause (UndefinedFunction _ a) = a
-    cause (SyntaxError _ a)       = "Wrong usage of " ++ a ++ "."
-    cause (IllegalFunctionCall _) = ""
-    cause (IllegalBehaviour _)    = ""
+    cause (UndefinedVariable _ a)  = a
+    cause (UndefinedFunction _ a)  = a
+    cause (TooManyArguments _ a b) =
+        a ++ " requires only " ++ show b ++ " arguments."
+    cause (TooFewArguments _ a b) =
+        a ++ " requires at least " ++ show b ++ " arguments."
+    cause (IllegalFunctionCall _)  = ""
+    cause (IllegalBehaviour _)     = ""
 
 traceError :: (LispError a) => String -> a -> String
 traceError src err =

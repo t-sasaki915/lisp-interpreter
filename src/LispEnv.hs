@@ -11,23 +11,32 @@ import Control.Monad.Trans.State.Strict (StateT, get)
 import Data.Functor ((<&>))
 import Data.List (find)
 
-type Eval = ExceptT RuntimeError (StateT LispEnv IO) LispData
+type Eval     = ExceptT RuntimeError (StateT LispEnv IO) LispData
+type EvalT a  = ExceptT RuntimeError (StateT LispEnv IO) a
+type Evalable = Int -> [LispData] -> Eval
 
-data LispEnvData = LispFunction (Int -> [LispData] -> Eval)
+data LispEnvData = LispProcedure Evalable
+                 | LispSyntax Evalable
                  | LispVariable LispData
 
 type LispEnv = [(String, LispEnvData)]
-
-initEnv :: LispEnv
-initEnv = []
 
 isVariable :: (String, LispEnvData) -> Bool
 isVariable (_, LispVariable _) = True
 isVariable _                   = False
 
-isFunction :: (String, LispEnvData) -> Bool
-isFunction (_, LispFunction _) = True
-isFunction _                   = False
+isSyntax :: (String, LispEnvData) -> Bool
+isSyntax (_, LispSyntax _) = True
+isSyntax _                 = False
+
+isProcedure :: (String, LispEnvData) -> Bool
+isProcedure (_, LispProcedure _) = True
+isProcedure _                    = False
+
+syntaxLabels :: EvalT [String]
+syntaxLabels = do
+    syntaxes <- lift (get <&> filter isSyntax)
+    return (map fst syntaxes)
 
 variableReference :: LispData -> Eval
 variableReference (LispSymbol n label) = do
@@ -40,15 +49,25 @@ variableReference (LispSymbol n label) = do
 
 variableReference x = throwE (IllegalBehaviour (index x))
 
-functionReference :: LispData -> ExceptT RuntimeError
-                                 (StateT LispEnv IO)
-                                 (Int -> [LispData] -> Eval)
-functionReference (LispSymbol n label) = do
-    funs <- lift (get <&> filter isFunction)
+syntaxReference :: LispData -> EvalT Evalable
+syntaxReference (LispSymbol n label) = do
+    syntaxes <- lift (get <&> filter isSyntax)
+    case find (\(l, _) -> l == label) syntaxes of
+        Just (_, LispSyntax f) ->
+            return f
+        _ ->
+            throwE (IllegalBehaviour n)
+
+syntaxReference x = throwE (IllegalBehaviour (index x))
+        
+
+procedureReference :: LispData -> EvalT Evalable
+procedureReference (LispSymbol n label) = do
+    funs <- lift (get <&> filter isProcedure)
     case find (\(l, _) -> l == label) funs of
-        Just (_, LispFunction f) ->
+        Just (_, LispProcedure f) ->
             return f
         _ ->
             throwE (UndefinedFunction n label)
 
-functionReference x = throwE (IllegalBehaviour (index x))
+procedureReference x = throwE (IllegalBehaviour (index x))

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
-module LispData where
+module LispData(LispData(..), index) where
 
 data LispData = LispInteger Int Int
               | LispReal Int Float
@@ -12,19 +12,6 @@ data LispData = LispInteger Int Int
               | LispList Int [LispData]
               | LispQuote LispData
               deriving Eq
-
-treatAsLispBool :: LispData -> Bool
-treatAsLispBool (LispList _ [])    = False
-treatAsLispBool (LispBool _ False) = False
-treatAsLispBool _                  = True
-
-isAtom :: LispData -> Bool
-isAtom (LispList _ _) = False
-isAtom _              = True
-
-isList :: LispData -> Bool
-isList (LispList _ _) = True
-isList _              = False
 
 index :: LispData -> Int
 index (LispInteger n _)    = n

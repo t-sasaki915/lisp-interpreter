@@ -7,7 +7,6 @@ import LispEnv
 import LispError (RuntimeError(..))
 
 import Control.Monad.Trans.Except (throwE)
-import Data.Functor ((<&>))
 
 eval :: LispData -> Eval
 eval = \case
@@ -38,40 +37,24 @@ eval = \case
     (LispList n []) ->
         return (LispBool n False)
 
-    (LispList _ [LispSymbol n "IF"]) ->
-        throwE (SyntaxError n "IF")
-
-    (LispList _ (LispSymbol n "IF" : args)) ->
-        case args of
-            [test, body1, body2] -> do
-                cond <- eval test <&> treatAsLispBool
-                if cond then eval body1
-                        else eval body2
-
-            [test, body] -> do
-                cond <- eval test <&> treatAsLispBool
-                if cond then eval body
-                        else return (LispBool n False)
-
-            _ ->
-                throwE (SyntaxError n "IF")
-    
-    (LispList _ [LispSymbol n "QUOTE"]) ->
-        throwE (SyntaxError n "QUOTE")
-
-    (LispList _ (LispSymbol n "QUOTE" : args)) ->
-        case args of
-            [d] -> return d
-            _   -> throwE (SyntaxError n "QUOTE") 
-    
     (LispList _ [LispSymbol n label]) -> do
-        f <- functionReference (LispSymbol n label)
-        f n []
+        sLabels <- syntaxLabels
+        if label `elem` sLabels then do
+            f <- syntaxReference (LispSymbol n label)
+            f n []
+        else do
+            f <- procedureReference (LispSymbol n label)
+            f n []
     
     (LispList _ (LispSymbol n label : args)) -> do
-        f     <- functionReference (LispSymbol n label)
-        args' <- mapM eval args
-        f n args'
+        sLabels <- syntaxLabels
+        if label `elem` sLabels then do
+            f <- syntaxReference (LispSymbol n label)
+            f n args
+        else do
+            f <- procedureReference (LispSymbol n label)
+            args' <- mapM eval args
+            f n args'
 
     (LispList _ xs) ->
         throwE (IllegalFunctionCall (index (head xs)))

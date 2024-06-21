@@ -1,8 +1,8 @@
 module Main (main) where
 
-import Eval (eval)
-import LispEnv (LispEnv, initEnv)
+import LispEnv (LispEnv)
 import LispError (traceError)
+import LispInterpreter (initEnv, interpretLisp)
 import Parser (parse)
 import Util (exceptT, lift2)
 
@@ -16,9 +16,9 @@ program = runExceptT $ do
     src    <- lift2 $ readFile (head args)
 
     parsed <- withExceptT (traceError src) (exceptT $ parse src)
-    result <- withExceptT (traceError src) (mapM eval parsed)
+    result <- withExceptT (traceError src) (interpretLisp parsed)
 
-    _      <- lift2 $ print (last result)
+    _      <- lift2 $ print result
 
     return ()
 

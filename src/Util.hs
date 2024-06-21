@@ -6,7 +6,15 @@ import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans, lift)
 import Control.Monad.Trans.Except (Except, ExceptT, except, runExcept)
 
-exceptT :: (Monad m) => Except a b -> ExceptT a m b
+getM :: Monad m => [x] -> Int -> ExceptT a m x
+getM xs i = return $ xs !! i
+
+getOrElseM :: Monad m => [x] -> Int -> x -> ExceptT a m x
+getOrElseM xs i def
+    | i >= length xs = return def
+    | otherwise      = return $ xs !! i
+
+exceptT :: Monad m => Except a b -> ExceptT a m b
 exceptT = except . runExcept
 
 foldM' :: (Foldable f, Monad m) => b -> f a -> (b -> a -> m b) -> m b
