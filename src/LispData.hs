@@ -4,7 +4,7 @@ module LispData(LispData(..), index, lispType, indAndType) where
 
 import Data.Ratio (numerator, denominator)
 
-data LispData = LispInteger Int Int
+data LispData = LispInteger Int Integer
               | LispReal Int Float
               | LispRational Int Rational
               | LispSymbol Int String

@@ -1,4 +1,5 @@
 import EvalSpec
+import LispMathsSpec
 import ParserSpec
 
 import System.Exit (exitFailure, exitSuccess)
@@ -30,4 +31,11 @@ main = do
             , TestLabel "Nested Quote Evaluation"             evalTest7
             , TestLabel "Too Many Arguments Quote Evaluation" evalTest8
             , TestLabel "Too Few Arguments Quote Evaluation"  evalTest9
+
+            , TestLabel "Lisp Multiplication Test 1"          lispMultipleTest1
+            , TestLabel "Lisp Multiplication Test 2"          lispMultipleTest2
+            , TestLabel "Lisp Multiplication Test 3"          lispMultipleTest3
+            , TestLabel "Lisp Multiplication Test 4"          lispMultipleTest4
+            , TestLabel "Lisp Multiplication Test 5"          lispMultipleTest5
+            , TestLabel "Lisp Multiplication Test 6"          lispMultipleTest6
             ]

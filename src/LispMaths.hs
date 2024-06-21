@@ -18,7 +18,7 @@ lispPredefMathsFunctions =
 
 finaliseRatCalc :: Int -> Rational -> LispData
 finaliseRatCalc ind r = case denominator r of
-    1 -> LispInteger ind (fromIntegral (numerator r))
+    1 -> LispInteger ind (numerator r)
     _ -> LispRational ind r
 
 lispMultiple :: Evalable

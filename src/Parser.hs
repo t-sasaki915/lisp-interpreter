@@ -106,7 +106,7 @@ mkQuoteNest n d = mkQuoteNest (n - 1) (LispQuote d)
 finaliseRead :: Int -> String -> Except ParseError LispData
 finaliseRead n buf =
     let buf' = map toUpper buf in
-    case readMaybe buf :: Maybe Int of
+    case readMaybe buf :: Maybe Integer of
         Just z -> return $ LispInteger n z
         Nothing ->
             case readMaybe buf :: Maybe Float of

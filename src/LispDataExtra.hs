@@ -48,11 +48,11 @@ treatAsLispRats = mapM unwrap
             (LispRational _ r) ->
                 return r
             (LispInteger _ n) ->
-                return (fromIntegral n % 1)
+                return (n % 1)
             d ->
                 throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
 
-treatAsLispInts :: [LispData] -> EvalT [Int]
+treatAsLispInts :: [LispData] -> EvalT [Integer]
 treatAsLispInts = mapM unwrap
     where unwrap = \case
             (LispInteger _ n) ->

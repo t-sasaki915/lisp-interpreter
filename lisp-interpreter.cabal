@@ -69,6 +69,7 @@ test-suite lisp-interpreter-test
   main-is: Spec.hs
   other-modules:
       EvalSpec
+      LispMathsSpec
       ParserSpec
       Paths_lisp_interpreter
   hs-source-dirs:
