@@ -71,6 +71,7 @@ test-suite lisp-interpreter-test
       EvalSpec
       LispMathsSpec
       ParserSpec
+      SpecUtil
       Paths_lisp_interpreter
   hs-source-dirs:
       test

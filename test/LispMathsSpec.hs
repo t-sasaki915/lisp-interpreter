@@ -7,21 +7,13 @@ import LispData (LispData(..))
 import LispEnv (Evalable, Eval)
 import LispInterpreter (initEnv)
 import LispMaths
+import SpecUtil
 
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.State.Strict (runStateT)
 import Data.Ratio ((%))
 import System.IO.Unsafe (unsafePerformIO)
 import Test.HUnit (Test(TestCase), assertEqual)
-
-integer :: Integer -> LispData
-integer = LispInteger 0
-real :: Float -> LispData
-real = LispReal 0
-rational :: Rational -> LispData
-rational = LispRational 0
-boolean :: Bool -> LispData
-boolean = LispBool 0
 
 lispMathsTest :: Evalable -> [LispData] -> Eval -> Test
 lispMathsTest f args e =
