@@ -29,13 +29,11 @@
             (otherwise (setf (aref *mem* *ptr*) (1- val))))))
 
 (defun print-val ()
-    (let ((val (aref *mem* *ptr*)))
-        (format t "~c" (code-char val))))
+        (format t "~c" (code-char (aref *mem* *ptr*))))
 
 (defun while (progs)
-    (let ((val (aref *mem* *ptr*)))
-        (if (/= val 0)
-            (progn (eval progs) (while progs)))))
+    (if (/= (aref *mem* *ptr*) 0)
+        (progn (eval progs) (while progs))))
 
 (defun parse-source (src)
     (map
