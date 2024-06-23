@@ -1,5 +1,5 @@
-import EvalSpec
 import LispMathsSpec
+import LispSyntaxSpec
 import ParserSpec
 
 import System.Exit (exitFailure, exitSuccess)
@@ -22,15 +22,9 @@ main = do
             , TestLabel "Comment Parsing"                     parserTest5
             , TestLabel "Quote Parsing"                       parserTest6
 
-            , TestLabel "Simple If Evaluation"                evalTest1
-            , TestLabel "Nested If Evaluation"                evalTest2
-            , TestLabel "Else Case Reduced If Evaluation"     evalTest3
-            , TestLabel "Too Few Arguments If Evaluation"     evalTest4
-            , TestLabel "Too Many Arguments If Evaluation"    evalTest5
-            , TestLabel "Quote Evaluation"                    evalTest6
-            , TestLabel "Nested Quote Evaluation"             evalTest7
-            , TestLabel "Too Many Arguments Quote Evaluation" evalTest8
-            , TestLabel "Too Few Arguments Quote Evaluation"  evalTest9
+            , TestLabel "Lisp IF Test 1"                      lispIFTest1
+            , TestLabel "Lisp IF Test 2"                      lispIFTest2
+            , TestLabel "Lisp QUOTE Test 1"                   lispQUOTETest1
 
             , TestLabel "Lisp Multiplication Test 1"          lispMultipleTest1
             , TestLabel "Lisp Multiplication Test 2"          lispMultipleTest2

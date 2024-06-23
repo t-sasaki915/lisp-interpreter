@@ -70,6 +70,7 @@ test-suite lisp-interpreter-test
   other-modules:
       EvalSpec
       LispMathsSpec
+      LispSyntaxSpec
       ParserSpec
       SpecUtil
       Paths_lisp_interpreter
