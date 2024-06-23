@@ -29,7 +29,7 @@
             (otherwise (setf (aref *mem* *ptr*) (1- val))))))
 
 (defun print-val ()
-        (format t "~c" (code-char (aref *mem* *ptr*))))
+    (format t "~c" (code-char (aref *mem* *ptr*))))
 
 (defun while (progs)
     (if (/= (aref *mem* *ptr*) 0)
