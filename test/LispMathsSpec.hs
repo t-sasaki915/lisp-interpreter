@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-{-# OPTIONS_GHC -Wno-overflowed-literals #-}
 
 module LispMathsSpec where
 
