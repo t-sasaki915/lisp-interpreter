@@ -7,6 +7,7 @@ import LispEnv
 import LispError (RuntimeError(..))
 
 import Control.Monad.Trans.Except (throwE)
+import Data.Ratio ((%), numerator, denominator)
 
 eval :: LispData -> Eval
 eval = \case
@@ -23,7 +24,9 @@ eval = \case
         return (LispReal n r)
 
     (LispRational n r) ->
-        return (LispRational n r)
+        case (numerator r, denominator r) of
+            (a, 1) -> return (LispInteger n a)
+            (a, b) -> return (LispRational n (a % b))
 
     (LispBool n b) ->
         return (LispBool n b)

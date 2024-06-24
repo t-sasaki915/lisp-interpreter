@@ -29,7 +29,6 @@ library
       LispDataExtra
       LispEnv
       LispError
-      LispFunction
       LispInterpreter
       LispMaths
       LispSyntax
@@ -69,9 +68,9 @@ test-suite lisp-interpreter-test
   main-is: Spec.hs
   other-modules:
       LispMathsSpec
+      LispSpec
       LispSyntaxSpec
       ParserSpec
-      SpecUtil
       Paths_lisp_interpreter
   hs-source-dirs:
       test

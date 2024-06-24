@@ -11,8 +11,8 @@ import Control.Monad.Trans.State.Strict (StateT, get)
 import Data.Functor ((<&>))
 import Data.List (find)
 
-type Eval     = ExceptT RuntimeError (StateT LispEnv IO) LispData
 type EvalT a  = ExceptT RuntimeError (StateT LispEnv IO) a
+type Eval     = EvalT LispData
 type Evalable = Int -> [LispData] -> Eval
 
 data LispEnvData = LispProcedure Evalable
@@ -59,7 +59,6 @@ syntaxReference (LispSymbol n label) = do
             throwE (IllegalBehaviour n)
 
 syntaxReference x = throwE (IllegalBehaviour (index x))
-        
 
 procedureReference :: LispData -> EvalT Evalable
 procedureReference (LispSymbol n label) = do

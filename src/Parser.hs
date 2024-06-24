@@ -2,7 +2,6 @@ module Parser (ParseError(..), parse) where
 
 import LispData (LispData(..))
 import LispError (ParseError(..))
-import Util (break')
 
 import Control.Monad.Trans.Except (Except, throwE)
 import Data.Char (toUpper)
@@ -128,10 +127,13 @@ finaliseRead n buf =
                         _ | buf =~ "[0-9]+\\/[0-9]+" == buf ->
                             case mapT read (break' (== '/') buf) of
                                 (_, 0) -> throwE $ ZeroDivideCalculation' n
+                                (a, 1) -> return $ LispInteger n a
                                 (a, b) -> return $ LispRational n (a % b)
                         _ ->
                             return $ LispSymbol n buf'
-    where mapT f (a, b) = (f a, f b)
+    where
+        mapT f (a, b) = (f a, f b)
+        break' f xs = let (a, b) = break f xs in (a, tail b)
 
 analyseChar :: Int -> String -> Except ParseError LispData
 analyseChar n str =

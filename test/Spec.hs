@@ -110,6 +110,23 @@ main = do
             , TestLabel "Lisp ABS Test 3"                     lispABSTest3
             , TestLabel "Lisp COS Test 1"                     lispCOSTest1
             , TestLabel "Lisp COS Test 2"                     lispCOSTest2
+            , TestLabel "Lisp EXPT Test 1"                    lispEXPTTest1
+            , TestLabel "Lisp EXPT Test 2"                    lispEXPTTest2
+            , TestLabel "Lisp EXPT Test 3"                    lispEXPTTest3
+            , TestLabel "Lisp EXPT Test 4"                    lispEXPTTest4
+            , TestLabel "Lisp EXPT Test 5"                    lispEXPTTest5
+            , TestLabel "Lisp EXPT Test 6"                    lispEXPTTest6
+            , TestLabel "Lisp EXPT Test 7"                    lispEXPTTest7
+            , TestLabel "Lisp EXPT Test 8"                    lispEXPTTest8
+            , TestLabel "Lisp EXPT Test 9"                    lispEXPTTest9
+            , TestLabel "Lisp EXPT Test 10"                   lispEXPTTest10
+            , TestLabel "Lisp EXPT Test 11"                   lispEXPTTest11
+            , TestLabel "Lisp EXPT Test 12"                   lispEXPTTest12
+            , TestLabel "Lisp EXPT Test 13"                   lispEXPTTest13
+            , TestLabel "Lisp MAX Test 1"                     lispMAXTest1
+            , TestLabel "Lisp MAX Test 2"                     lispMAXTest2
+            , TestLabel "Lisp MIN Test 1"                     lispMINTest1
+            , TestLabel "Lisp MIN Test 2"                     lispMINTest2
             , TestLabel "Lisp NOT Test 1"                     lispNOTTest1
             , TestLabel "Lisp NOT Test 2"                     lispNOTTest2
             , TestLabel "Lisp NOT Test 3"                     lispNOTTest3

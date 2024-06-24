@@ -4,9 +4,9 @@ import LispEnv (LispEnv)
 import LispError (traceError)
 import LispInterpreter (initEnv, interpretLisp)
 import Parser (parse)
-import Util (exceptT, lift2)
 
-import Control.Monad.Trans.Except (withExceptT, runExceptT)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Except (withExceptT, runExceptT, except, runExcept)
 import Control.Monad.Trans.State.Strict (StateT, runStateT)
 import System.Environment (getArgs)
 
@@ -21,6 +21,9 @@ program = runExceptT $ do
     _      <- lift2 $ print result
 
     return ()
+    where
+        lift2 = lift . lift
+        exceptT = except . runExcept
 
 main :: IO ()
 main =

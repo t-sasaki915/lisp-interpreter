@@ -7,10 +7,11 @@ import LispData
 import LispDataExtra
 import LispEnv
 import LispError (RuntimeError(..))
-import Util (getM)
 
 import Control.Monad.Trans.Except (throwE)
 import Data.Functor ((<&>))
+import Data.Ratio (numerator, denominator)
+import GHC.Float (powerFloat)
 
 lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
@@ -25,43 +26,65 @@ lispPredefMathsFunctions =
     , (">=",      LispProcedure lispGreaterThanOrEq)
     , ("ABS",     LispProcedure lispABS)
     , ("COS",     LispProcedure lispCOS)
+    , ("EXPT",    LispProcedure lispEXPT)
+    , ("MAX",     LispProcedure lispMAX)
+    , ("MIN",     LispProcedure lispMIN)
     , ("NOT",     LispProcedure lispNOT)
     , ("SIN",     LispProcedure lispSIN)
     , ("SQRT",    LispProcedure lispSQRT)
     , ("NUMBER?", LispProcedure lispNUMBERP)
     ]
 
-guaranteeNotZero :: Int -> LispNumber -> EvalT LispNumber
-guaranteeNotZero _ (LispInteger' n)  | n /= 0 = return (LispInteger' n)
-guaranteeNotZero _ (LispRational' r) | r /= 0 = return (LispRational' r)
-guaranteeNotZero _ (LispReal' r)     | r /= 0 = return (LispReal' r)
+guaranteeNotZero :: Int -> LispNumber -> EvalT ()
+guaranteeNotZero _ (LispInteger' n)  | n /= 0 = return ()
+guaranteeNotZero _ (LispRational' r) | r /= 0 = return ()
+guaranteeNotZero _ (LispReal' r)     | r /= 0 = return ()
 guaranteeNotZero n _ = throwE (ZeroDivideCalculation n)
 
+power :: LispNumber -> LispNumber -> LispNumber
+power (LispReal' base) (LispReal' pow) =
+    LispReal' (powerFloat base pow)
+power (LispReal' base) (LispRational' pow) =
+    power (LispReal' base) (LispReal' (fromRational pow))
+power (LispReal' base) (LispInteger' pow) =
+    power (LispReal' base) (LispReal' (fromIntegral pow))
+power (LispRational' base) (LispReal' pow) =
+    power (LispReal' (fromRational base)) (LispReal' pow)
+power (LispRational' base) (LispRational' pow) =
+    case (numerator pow, denominator pow) of
+        (a, 1) -> power (LispRational' base) (LispInteger' a)
+        _      -> power (LispReal' (fromRational base)) (LispReal' (fromRational pow))
+power (LispRational' base) (LispInteger' pow) =
+    case (numerator base, denominator base) of
+        (a, 1) -> power (LispInteger' a) (LispInteger' pow)
+        (a, b) -> power (LispInteger' a) (LispInteger' pow) /
+                    power (LispInteger' b) (LispInteger' pow)
+power (LispInteger' base) (LispReal' pow) =
+    power (LispReal' (fromIntegral base)) (LispReal' pow)
+power (LispInteger' base) (LispRational' pow) =
+    case (numerator pow, denominator pow) of
+        (a, 1) -> power (LispInteger' base) (LispInteger' a)
+        _      -> power (LispReal' (fromIntegral base)) (LispReal' (fromRational pow))
+power (LispInteger' base) (LispInteger' pow)
+    | pow < 0   = LispInteger' 1 / power (LispInteger' base) (LispInteger' (abs pow))
+    | otherwise = LispInteger' (base ^ pow)
+
 lispMultiple :: Evalable
-lispMultiple ind args
-    | null args        = return (LispInteger ind 1)
-    | length args == 1 = getM args 0
-    | otherwise        =
-        mapM treatAsLispNumber args >>=
-            (fromLispNumber ind . product)
+lispMultiple ind args =
+    mapM treatAsLispNumber args >>=
+        (fromLispNumber ind . product)
 
 lispAddition :: Evalable
-lispAddition ind args
-    | null args        = return (LispInteger ind 0)
-    | length args == 1 = getM args 0
-    | otherwise        =
-        mapM treatAsLispNumber args >>=
-            (fromLispNumber ind . sum)
+lispAddition ind args =
+    mapM treatAsLispNumber args >>=
+        (fromLispNumber ind . sum)
 
 lispSubtract :: Evalable
 lispSubtract ind args
     | null args        = throwE (TooFewArguments ind "-" 1)
     | length args == 1 =
-        case head args of
-            (LispReal _ r)     -> return (LispReal ind (negate r))
-            (LispRational _ r) -> return (LispRational ind (negate r))
-            (LispInteger _ n)  -> return (LispInteger ind (negate n))
-            d -> throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+        treatAsLispNumber (head args) >>=
+            (fromLispNumber ind . negate)
     | otherwise        =
         mapM treatAsLispNumber args >>=
             (fromLispNumber ind . foldl1 (-))
@@ -70,9 +93,9 @@ lispDivision :: Evalable
 lispDivision ind args
     | null args        = throwE (TooFewArguments ind "/" 1)
     | length args == 1 =
-        treatAsLispNumber (head args) >>=
-            guaranteeNotZero ind >>=
-                (\a -> fromLispNumber ind (LispInteger' 1 / a))
+        treatAsLispNumber (head args) >>= (\a ->
+            guaranteeNotZero ind a >>=
+                const (fromLispNumber ind (LispInteger' 1 / a)))
     | otherwise        =
         mapM treatAsLispNumber args >>= (\nums ->
             mapM (guaranteeNotZero ind) (tail nums) >>=
@@ -178,6 +201,29 @@ lispCOS ind args
     | otherwise       =
         treatAsLispNumber (head args) >>=
             (fromLispNumber ind . LispReal' . cos . toReal)
+
+lispEXPT :: Evalable
+lispEXPT ind args
+    | length args > 2 = throwE (TooManyArguments ind "EXPT" 2)
+    | length args < 2 = throwE (TooFewArguments ind "EXPT" 2)
+    | otherwise       = do
+        base <- treatAsLispNumber (head args)
+        pow  <- treatAsLispNumber (args !! 1)
+        fromLispNumber ind (power base pow)
+
+lispMAX :: Evalable
+lispMAX ind args
+    | null args = throwE (TooFewArguments ind "MAX" 1)
+    | otherwise =
+        mapM treatAsLispNumber args >>=
+            (fromLispNumber ind . maximum)
+
+lispMIN :: Evalable
+lispMIN ind args
+    | null args = throwE (TooFewArguments ind "MIN" 1)
+    | otherwise =
+        mapM treatAsLispNumber args >>=
+            (fromLispNumber ind . minimum)
 
 lispNOT :: Evalable
 lispNOT ind args
