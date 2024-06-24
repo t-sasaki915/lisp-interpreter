@@ -126,9 +126,9 @@ finaliseRead n buf =
                         ('#' : '\\' : xs) ->
                             analyseChar n (map toUpper xs)
                         _ | buf =~ "[0-9]+\\/[0-9]+" == buf ->
-                            return $ LispRational n $
-                                uncurry (%)
-                                    (mapT read (break' (== '/') buf))
+                            case mapT read (break' (== '/') buf) of
+                                (_, 0) -> throwE $ ZeroDivideCalculation' n
+                                (a, b) -> return $ LispRational n (a % b)
                         _ ->
                             return $ LispSymbol n buf'
     where mapT f (a, b) = (f a, f b)

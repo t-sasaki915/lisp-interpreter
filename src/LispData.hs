@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
-module LispData(LispData(..), index, lispType, indAndType) where
+module LispData where
 
-import Data.Ratio (numerator, denominator)
+import Data.Ratio ((%), numerator, denominator)
 
 data LispData = LispInteger Int Integer
               | LispReal Int Float
@@ -15,6 +15,15 @@ data LispData = LispInteger Int Integer
               | LispPair Int (LispData, LispData)
               | LispQuote LispData
               deriving Eq
+
+data LispNumber = LispInteger' Integer
+                | LispReal' Float
+                | LispRational' Rational
+
+toReal :: LispNumber -> Float
+toReal (LispInteger' n)  = fromIntegral n
+toReal (LispReal' r)     = r
+toReal (LispRational' r) = fromIntegral (numerator r) / fromIntegral (denominator r)
 
 index :: LispData -> Int
 index (LispInteger n _)   = n
@@ -55,3 +64,118 @@ instance Show LispData where
     show (LispList _ l)      = "(" ++ unwords (map show l) ++ ")"
     show (LispPair _ p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
     show (LispQuote d)       = "'" ++ show d
+
+instance Eq LispNumber where
+    (==) (LispInteger' z1) (LispInteger' z2) =
+        z1 == z2
+    (==) (LispInteger' z1) (LispReal' r1) =
+        fromIntegral z1 == r1
+    (==) (LispInteger' z1) (LispRational' r1) =
+        (z1 % 1) == r1
+    (==) (LispReal' r1) (LispInteger' z1) =
+        r1 == fromIntegral z1
+    (==) (LispReal' r1) (LispReal' r2) =
+        r1 == r2
+    (==) (LispReal' r1) (LispRational' r2) =
+        r1 == (fromIntegral (numerator r2) / fromIntegral (denominator r2))
+    (==) (LispRational' r1) (LispInteger' z1) =
+        r1 == (z1 % 1)
+    (==) (LispRational' r1) (LispReal' r2) =
+        (fromIntegral (numerator r1) / fromIntegral (denominator r1)) == r2
+    (==) (LispRational' r1) (LispRational' r2) =
+        r1 == r2
+
+instance Ord LispNumber where
+    (<=) (LispInteger' z1) (LispInteger' z2) =
+        z1 <= z2
+    (<=) (LispInteger' z1) (LispReal' r1) =
+        fromIntegral z1 <= r1
+    (<=) (LispInteger' z1) (LispRational' r1) =
+        (z1 % 1) <= r1
+    (<=) (LispReal' r1) (LispInteger' z1) =
+        r1 <= fromIntegral z1
+    (<=) (LispReal' r1) (LispReal' r2) =
+        r1 <= r2
+    (<=) (LispReal' r1) (LispRational' r2) =
+        r1 <= (fromIntegral (numerator r2) / fromIntegral (denominator r2))
+    (<=) (LispRational' r1) (LispInteger' z1) =
+        r1 <= (z1 % 1)
+    (<=) (LispRational' r1) (LispReal' r2) =
+        (fromIntegral (numerator r1) / fromIntegral (denominator r1)) <= r2
+    (<=) (LispRational' r1) (LispRational' r2) =
+        r1 <= r2
+
+instance Num LispNumber where
+    (+) (LispReal' r1) (LispReal' r2) =
+        LispReal' (r1 + r2)
+    (+) (LispReal' r1) (LispRational' r2) =
+        LispReal' (r1 + (fromIntegral (numerator r2) / fromIntegral (denominator r2)))
+    (+) (LispReal' r1) (LispInteger' n1) =
+        LispReal' (r1 + fromIntegral n1)
+    (+) (LispRational' r1) (LispReal' r2) =
+        LispReal' ((fromIntegral (numerator r1) / fromIntegral (denominator r1)) + r2)
+    (+) (LispRational' r1) (LispRational' r2) =
+        LispRational' (r1 + r2)
+    (+) (LispRational' r1) (LispInteger' n1) =
+        LispRational' (r1 + (n1 % 1)) 
+    (+) (LispInteger' n1) (LispReal' r1) =
+        LispReal' (fromIntegral n1 + r1)
+    (+) (LispInteger' n1) (LispRational' r1) =
+        LispRational' ((n1 % 1) + r1)
+    (+) (LispInteger' n1) (LispInteger' n2) =
+        LispInteger' (n1 + n2)
+
+    (*) (LispReal' r1) (LispReal' r2) =
+        LispReal' (r1 * r2)
+    (*) (LispReal' r1) (LispRational' r2) =
+        LispReal' (r1 * (fromIntegral (numerator r2) / fromIntegral (denominator r2)))
+    (*) (LispReal' r1) (LispInteger' n1) =
+        LispReal' (r1 * fromIntegral n1)
+    (*) (LispRational' r1) (LispReal' r2) =
+        LispReal' ((fromIntegral (numerator r1) / fromIntegral (denominator r1)) * r2)
+    (*) (LispRational' r1) (LispRational' r2) =
+        LispRational' (r1 * r2)
+    (*) (LispRational' r1) (LispInteger' n1) =
+        LispRational' (r1 * (n1 % 1)) 
+    (*) (LispInteger' n1) (LispReal' r1) =
+        LispReal' (fromIntegral n1 * r1)
+    (*) (LispInteger' n1) (LispRational' r1) =
+        LispRational' ((n1 % 1) * r1)
+    (*) (LispInteger' n1) (LispInteger' n2) =
+        LispInteger' (n1 * n2)
+
+    abs (LispReal' r)     = LispReal' (abs r)
+    abs (LispRational' r) = LispRational' (abs r)
+    abs (LispInteger' n)  = LispInteger' (abs n)
+
+    negate (LispReal' r)     = LispReal' (negate r)
+    negate (LispRational' r) = LispRational' (negate r)
+    negate (LispInteger' n)  = LispInteger' (negate n)
+
+    signum (LispReal' r)     = LispReal' (signum r)
+    signum (LispRational' r) = LispRational' (signum r)
+    signum (LispInteger' n)  = LispInteger' (signum n)
+
+    fromInteger = LispInteger'
+
+instance Fractional LispNumber where
+    (/) (LispReal' r1) (LispReal' r2) =
+        LispReal' (r1 / r2)
+    (/) (LispReal' r1) (LispRational' r2) =
+        LispReal' (r1 / (fromIntegral (numerator r2) / fromIntegral (denominator r2)))
+    (/) (LispReal' r1) (LispInteger' n1) =
+        LispReal' (r1 / fromIntegral n1)
+    (/) (LispRational' r1) (LispReal' r2) =
+        LispReal' ((fromIntegral (numerator r1) / fromIntegral (denominator r1)) / r2)
+    (/) (LispRational' r1) (LispRational' r2) =
+        LispRational' (r1 / r2)
+    (/) (LispRational' r1) (LispInteger' n1) =
+        LispRational' (r1 / (n1 % 1)) 
+    (/) (LispInteger' n1) (LispReal' r1) =
+        LispReal' (fromIntegral n1 / r1)
+    (/) (LispInteger' n1) (LispRational' r1) =
+        LispRational' ((n1 % 1) / r1)
+    (/) (LispInteger' n1) (LispInteger' n2) =
+        LispRational' (n1 % n2)
+
+    fromRational = LispRational'

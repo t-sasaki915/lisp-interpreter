@@ -3,7 +3,7 @@
 
 module LispMaths where
 
-import LispData (LispData(..), indAndType)
+import LispData
 import LispDataExtra
 import LispEnv
 import LispError (RuntimeError(..))
@@ -11,7 +11,6 @@ import Util (getM)
 
 import Control.Monad.Trans.Except (throwE)
 import Data.Functor ((<&>))
-import Data.Ratio ((%), numerator, denominator)
 
 lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
@@ -32,40 +31,27 @@ lispPredefMathsFunctions =
     , ("NUMBER?", LispProcedure lispNUMBERP)
     ]
 
-finaliseRatCalc :: Int -> Rational -> LispData
-finaliseRatCalc ind r = case denominator r of
-    1 -> LispInteger ind (numerator r)
-    _ -> LispRational ind r
+guaranteeNotZero :: Int -> LispNumber -> EvalT LispNumber
+guaranteeNotZero _ (LispInteger' n)  | n /= 0 = return (LispInteger' n)
+guaranteeNotZero _ (LispRational' r) | r /= 0 = return (LispRational' r)
+guaranteeNotZero _ (LispReal' r)     | r /= 0 = return (LispReal' r)
+guaranteeNotZero n _ = throwE (ZeroDivideCalculation n)
 
 lispMultiple :: Evalable
 lispMultiple ind args
     | null args        = return (LispInteger ind 1)
     | length args == 1 = getM args 0
-    | otherwise        = do
-        if isThereReal args then do
-            vars <- treatAsLispReals args
-            return (LispReal ind (product vars))
-        else if isThereRat args then do
-            vars <- treatAsLispRats args
-            return (finaliseRatCalc ind (product vars))
-        else do
-            vars <- treatAsLispInts args
-            return (LispInteger ind (product vars))
+    | otherwise        =
+        mapM treatAsLispNumber args >>=
+            (fromLispNumber ind . product)
 
 lispAddition :: Evalable
 lispAddition ind args
     | null args        = return (LispInteger ind 0)
     | length args == 1 = getM args 0
-    | otherwise        = do
-        if isThereReal args then do
-            vars <- treatAsLispReals args
-            return (LispReal ind (sum vars))
-        else if isThereRat args then do
-            vars <- treatAsLispRats args
-            return (finaliseRatCalc ind (sum vars))
-        else do
-            vars <- treatAsLispInts args
-            return (LispInteger ind (sum vars))
+    | otherwise        =
+        mapM treatAsLispNumber args >>=
+            (fromLispNumber ind . sum)
 
 lispSubtract :: Evalable
 lispSubtract ind args
@@ -76,45 +62,28 @@ lispSubtract ind args
             (LispRational _ r) -> return (LispRational ind (negate r))
             (LispInteger _ n)  -> return (LispInteger ind (negate n))
             d -> throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
-    | otherwise        = do
-        if isThereReal args then do
-            vars <- treatAsLispReals args
-            return (LispReal ind (foldl1 (-) vars))
-        else if isThereRat args then do
-            vars <- treatAsLispRats args
-            return (finaliseRatCalc ind (foldl1 (-) vars))
-        else do
-            vars <- treatAsLispInts args
-            return (LispInteger ind (foldl1 (-) vars))
+    | otherwise        =
+        mapM treatAsLispNumber args >>=
+            (fromLispNumber ind . foldl1 (-))
 
 lispDivision :: Evalable
 lispDivision ind args
     | null args        = throwE (TooFewArguments ind "/" 1)
     | length args == 1 =
-        case head args of
-            (LispReal _ r)     -> return (LispReal ind (1 / r))
-            (LispRational _ r) -> return (finaliseRatCalc ind (recip r))
-            (LispInteger _ n)  -> return (LispRational ind (1 % n))
-            d -> throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
-    | otherwise        = do
-        if isThereReal args then do
-            vars <- treatAsLispReals args
-            return (LispReal ind (foldl1 (/) vars))
-        else if isThereRat args then do
-            vars <- treatAsLispRats args
-            return (finaliseRatCalc ind (foldl1 (/) vars))
-        else do
-            vars <- treatAsLispInts args
-            let first = head vars % 1
-                fracs = map (1 %) (tail vars)
-            return (finaliseRatCalc ind (product (first : fracs)))
+        treatAsLispNumber (head args) >>=
+            guaranteeNotZero ind >>=
+                (\a -> fromLispNumber ind (LispInteger' 1 / a))
+    | otherwise        =
+        mapM treatAsLispNumber args >>= (\nums ->
+            mapM (guaranteeNotZero ind) (tail nums) >>=
+                const (fromLispNumber ind (foldl1 (/) nums)))
 
 lispLessThan :: Evalable
 lispLessThan ind args
     | null args        = throwE (TooFewArguments ind "<" 1)
     | length args == 1 = return (LispBool ind True)
     | otherwise        = do
-        vars <- treatAsLispReals args
+        vars <- mapM treatAsLispNumber args
         let res = foldl
                     (\case
                         False -> const False
@@ -131,7 +100,7 @@ lispLessThanOrEq ind args
     | null args        = throwE (TooFewArguments ind "<=" 1)
     | length args == 1 = return (LispBool ind True)
     | otherwise        = do
-        vars <- treatAsLispReals args
+        vars <- mapM treatAsLispNumber args
         let res = foldl
                     (\case
                         False -> const False
@@ -148,7 +117,7 @@ lispNumberEq ind args
     | null args        = throwE (TooFewArguments ind "=" 1)
     | length args == 1 = return (LispBool ind True)
     | otherwise        = do
-        vars <- treatAsLispReals args
+        vars <- mapM treatAsLispNumber args
         let res = foldl
                     (\case
                         False -> const False
@@ -165,7 +134,7 @@ lispGreaterThan ind args
     | null args        = throwE (TooFewArguments ind ">" 1)
     | length args == 1 = return (LispBool ind True)
     | otherwise        = do
-        vars <- treatAsLispReals args
+        vars <- mapM treatAsLispNumber args
         let res = foldl
                     (\case
                         False -> const False
@@ -182,7 +151,7 @@ lispGreaterThanOrEq ind args
     | null args        = throwE (TooFewArguments ind ">=" 1)
     | length args == 1 = return (LispBool ind True)
     | otherwise        = do
-        vars <- treatAsLispReals args
+        vars <- mapM treatAsLispNumber args
         let res = foldl
                     (\case
                         False -> const False
@@ -199,18 +168,16 @@ lispABS ind args
     | length args > 1 = throwE (TooManyArguments ind "ABS" 1)
     | null args       = throwE (TooFewArguments ind "ABS" 1)
     | otherwise       =
-        case head args of
-            (LispReal _ r)     -> return (LispReal ind (abs r))
-            (LispRational _ r) -> return (LispRational ind (abs r))
-            (LispInteger _ n)  -> return (LispInteger ind (abs n))
-            d -> throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+        treatAsLispNumber (head args) >>=
+            (fromLispNumber ind . abs)
 
 lispCOS :: Evalable
 lispCOS ind args
     | length args > 1 = throwE (TooManyArguments ind "COS" 1)
     | null args       = throwE (TooFewArguments ind "COS" 1)
     | otherwise       =
-        treatAsLispReal (head args) <&> (LispReal ind . cos)
+        treatAsLispNumber (head args) >>=
+            (fromLispNumber ind . LispReal' . cos . toReal)
 
 lispNOT :: Evalable
 lispNOT ind args
@@ -224,14 +191,16 @@ lispSIN ind args
     | length args > 1 = throwE (TooManyArguments ind "SIN" 1)
     | null args       = throwE (TooFewArguments ind "SIN" 1)
     | otherwise       =
-        treatAsLispReal (head args) <&> (LispReal ind . sin)
+        treatAsLispNumber (head args) >>=
+            (fromLispNumber ind . LispReal' . sin . toReal)
 
 lispSQRT :: Evalable
 lispSQRT ind args
     | length args > 1 = throwE (TooManyArguments ind "SQRT" 1)
     | null args       = throwE (TooFewArguments ind "SQRT" 1)
     | otherwise       =
-        treatAsLispReal (head args) <&> (LispReal ind . sqrt)
+        treatAsLispNumber (head args) >>=
+            (fromLispNumber ind . LispReal' . sqrt . toReal)
 
 lispNUMBERP :: Evalable
 lispNUMBERP ind args
