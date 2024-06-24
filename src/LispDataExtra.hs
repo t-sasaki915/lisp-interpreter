@@ -29,37 +29,28 @@ isThereRat = isJust . find match
     where match = \case (LispRational _ _) -> True
                         _                  -> False
 
+treatAsLispReal :: LispData -> EvalT Float
+treatAsLispReal (LispReal _ r)     = return r
+treatAsLispReal (LispRational _ r) =
+    return (fromIntegral (numerator r) / fromIntegral (denominator r))
+treatAsLispReal (LispInteger _ n)  = return (fromIntegral n)
+treatAsLispReal d = throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+
+treatAsLispRat :: LispData -> EvalT Rational
+treatAsLispRat (LispReal _ r)     = return (fst . head $ readFloat (show r))
+treatAsLispRat (LispRational _ r) = return r
+treatAsLispRat (LispInteger _ n)  = return (n % 1)
+treatAsLispRat d = throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+
+treatAsLispInt :: LispData -> EvalT Integer
+treatAsLispInt (LispInteger _ n) = return n
+treatAsLispInt d = throwE (uncurry IncompatibleType (indAndType d) "INT")
+
 treatAsLispReals :: [LispData] -> EvalT [Float]
-treatAsLispReals = mapM unwrap
-    where unwrap = \case
-            (LispReal _ r)     ->
-                return r
-            (LispRational _ r) ->
-                return (fromIntegral (numerator r) / fromIntegral (denominator r))
-            (LispInteger _ n)  ->
-                return (fromIntegral n)
-            d ->
-                throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+treatAsLispReals = mapM treatAsLispReal
 
 treatAsLispRats :: [LispData] -> EvalT [Rational]
-treatAsLispRats = mapM unwrap
-    where unwrap = \case
-            (LispReal _ r) ->
-                return (fst . head $ readFloat (show r))
-            (LispRational _ r) ->
-                return r
-            (LispInteger _ n) ->
-                return (n % 1)
-            d ->
-                throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+treatAsLispRats = mapM treatAsLispRat
 
 treatAsLispInts :: [LispData] -> EvalT [Integer]
-treatAsLispInts = mapM unwrap
-    where unwrap = \case
-            (LispInteger _ n) ->
-                return n
-            d ->
-                throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
-
-treatAsLispReal :: LispData -> EvalT Float
-treatAsLispReal d = treatAsLispReals [d] <&> head
+treatAsLispInts = mapM treatAsLispInt

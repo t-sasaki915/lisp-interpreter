@@ -420,6 +420,21 @@ lispGreaterThanOrEqTest10 = lispMathsTest lispGreaterThanOrEq
     [integer 5]
     (return (boolean True))
 
+lispABSTest1 :: Test
+lispABSTest1 = lispMathsTest lispABS
+    [integer 0]
+    (return (integer 0))
+
+lispABSTest2 :: Test
+lispABSTest2 = lispMathsTest lispABS
+    [rational (12 % 13)]
+    (return (rational (12 % 13)))
+
+lispABSTest3 :: Test
+lispABSTest3 = lispMathsTest lispABS
+    [real (-1.09)]
+    (return (real 1.09))
+
 lispCOSTest1 :: Test
 lispCOSTest1 = lispMathsTest lispCOS
     [real 0.0]
@@ -429,3 +444,53 @@ lispCOSTest2 :: Test
 lispCOSTest2 = lispMathsTest lispCOS
     [real 1.0]
     (return (real 0.5403023))
+
+lispNOTTest1 :: Test
+lispNOTTest1 = lispMathsTest lispNOT
+    [boolean True]
+    (return (boolean False))
+
+lispNOTTest2 :: Test
+lispNOTTest2 = lispMathsTest lispNOT
+    [boolean False]
+    (return (boolean True))
+
+lispNOTTest3 :: Test
+lispNOTTest3 = lispMathsTest lispNOT
+    [real 234.3]
+    (return (boolean False))
+
+lispSINTest1 :: Test
+lispSINTest1 = lispMathsTest lispSIN
+    [real 0.0]
+    (return (real 0.0))
+
+lispSINTest2 :: Test
+lispSINTest2 = lispMathsTest lispSIN
+    [real 1.0]
+    (return (real 0.84147096))
+
+lispSQRTTest1 :: Test
+lispSQRTTest1 = lispMathsTest lispSQRT
+    [integer 10]
+    (return (real 3.1622777))
+
+lispSQRTTest2 :: Test
+lispSQRTTest2 = lispMathsTest lispSQRT
+    [real 10.0]
+    (return (real 3.1622777))
+
+lispSQRTTest3 :: Test
+lispSQRTTest3 = lispMathsTest lispSQRT
+    [integer 4]
+    (return (real 2.0))
+
+lispNUMBERPTest1 :: Test
+lispNUMBERPTest1 = lispMathsTest lispNUMBERP
+    [integer 12]
+    (return (boolean True))
+
+lispNUMBERPTest2 :: Test
+lispNUMBERPTest2 = lispMathsTest lispNUMBERP
+    [boolean False]
+    (return (boolean False))

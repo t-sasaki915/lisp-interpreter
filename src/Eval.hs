@@ -34,6 +34,9 @@ eval = \case
     (LispCharacter n c) ->
         return (LispCharacter n c)
 
+    (LispPair n p) ->
+        return (LispPair n p)
+
     (LispList n []) ->
         return (LispBool n False)
 

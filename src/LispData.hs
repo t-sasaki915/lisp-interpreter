@@ -12,6 +12,7 @@ data LispData = LispInteger Int Integer
               | LispString Int String
               | LispCharacter Int Char
               | LispList Int [LispData]
+              | LispPair Int (LispData, LispData)
               | LispQuote LispData
               deriving Eq
 
@@ -24,6 +25,7 @@ index (LispBool n _)      = n
 index (LispString n _)    = n
 index (LispCharacter n _) = n
 index (LispList n _)      = n
+index (LispPair n _)      = n
 index (LispQuote d)       = index d
 
 lispType :: LispData -> String
@@ -35,7 +37,8 @@ lispType (LispBool _ _)      = "BOOL"
 lispType (LispString _ _)    = "STRING"
 lispType (LispCharacter _ _) = "CHAR"
 lispType (LispList _ _)      = "LIST"
-lispType (LispQuote d)       = lispType d
+lispType (LispPair _ _)      = "PAIR"
+lispType (LispQuote d)       = "'" ++ lispType d
 
 indAndType :: LispData -> (Int, String)
 indAndType d = (index d, lispType d)
@@ -50,4 +53,5 @@ instance Show LispData where
     show (LispString _ s)    = "\"" ++ s ++ "\""
     show (LispCharacter _ c) = "#\\" ++ [c]
     show (LispList _ l)      = "(" ++ unwords (map show l) ++ ")"
+    show (LispPair _ p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
     show (LispQuote d)       = "'" ++ show d

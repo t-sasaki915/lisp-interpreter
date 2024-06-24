@@ -105,6 +105,19 @@ main = do
             , TestLabel "Lisp Greater Than Or Eq Test 8"      lispGreaterThanOrEqTest8
             , TestLabel "Lisp Greater Than Or Eq Test 9"      lispGreaterThanOrEqTest9
             , TestLabel "Lisp Greater Than Or Eq Test 10"     lispGreaterThanOrEqTest10
+            , TestLabel "Lisp ABS Test 1"                     lispABSTest1
+            , TestLabel "Lisp ABS Test 2"                     lispABSTest2
+            , TestLabel "Lisp ABS Test 3"                     lispABSTest3
             , TestLabel "Lisp COS Test 1"                     lispCOSTest1
             , TestLabel "Lisp COS Test 2"                     lispCOSTest2
+            , TestLabel "Lisp NOT Test 1"                     lispNOTTest1
+            , TestLabel "Lisp NOT Test 2"                     lispNOTTest2
+            , TestLabel "Lisp NOT Test 3"                     lispNOTTest3
+            , TestLabel "Lisp SIN Test 1"                     lispSINTest1
+            , TestLabel "Lisp SIN Test 2"                     lispSINTest2
+            , TestLabel "Lisp SQRT Test 1"                    lispSQRTTest1
+            , TestLabel "Lisp SQRT Test 2"                    lispSQRTTest2
+            , TestLabel "Lisp SQRT Test 3"                    lispSQRTTest3
+            , TestLabel "Lisp NUMBERP Test 1"                 lispNUMBERPTest1
+            , TestLabel "Lisp NUMBERP Test 2"                 lispNUMBERPTest2
             ]

@@ -15,16 +15,21 @@ import Data.Ratio ((%), numerator, denominator)
 
 lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
-    [ ("*",   LispProcedure lispMultiple)
-    , ("+",   LispProcedure lispAddition)
-    , ("-",   LispProcedure lispSubtract)
-    , ("/",   LispProcedure lispDivision)
-    , ("<",   LispProcedure lispLessThan)
-    , ("<=",  LispProcedure lispLessThanOrEq)
-    , ("=",   LispProcedure lispNumberEq)
-    , (">",   LispProcedure lispGreaterThan)
-    , (">=",  LispProcedure lispGreaterThanOrEq)
-    , ("COS", LispProcedure lispCOS)
+    [ ("*",       LispProcedure lispMultiple)
+    , ("+",       LispProcedure lispAddition)
+    , ("-",       LispProcedure lispSubtract)
+    , ("/",       LispProcedure lispDivision)
+    , ("<",       LispProcedure lispLessThan)
+    , ("<=",      LispProcedure lispLessThanOrEq)
+    , ("=",       LispProcedure lispNumberEq)
+    , (">",       LispProcedure lispGreaterThan)
+    , (">=",      LispProcedure lispGreaterThanOrEq)
+    , ("ABS",     LispProcedure lispABS)
+    , ("COS",     LispProcedure lispCOS)
+    , ("NOT",     LispProcedure lispNOT)
+    , ("SIN",     LispProcedure lispSIN)
+    , ("SQRT",    LispProcedure lispSQRT)
+    , ("NUMBER?", LispProcedure lispNUMBERP)
     ]
 
 finaliseRatCalc :: Int -> Rational -> LispData
@@ -189,9 +194,52 @@ lispGreaterThanOrEq ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
+lispABS :: Evalable
+lispABS ind args
+    | length args > 1 = throwE (TooManyArguments ind "ABS" 1)
+    | null args       = throwE (TooFewArguments ind "ABS" 1)
+    | otherwise       =
+        case head args of
+            (LispReal _ r)     -> return (LispReal ind (abs r))
+            (LispRational _ r) -> return (LispRational ind (abs r))
+            (LispInteger _ n)  -> return (LispInteger ind (abs n))
+            d -> throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+
 lispCOS :: Evalable
 lispCOS ind args
     | length args > 1 = throwE (TooManyArguments ind "COS" 1)
     | null args       = throwE (TooFewArguments ind "COS" 1)
     | otherwise       =
         treatAsLispReal (head args) <&> (LispReal ind . cos)
+
+lispNOT :: Evalable
+lispNOT ind args
+    | length args > 1 = throwE (TooManyArguments ind "NOT" 1)
+    | null args       = throwE (TooFewArguments ind "NOT" 1)
+    | otherwise       =
+        treatAsLispBool (head args) <&> (LispBool ind . not)
+
+lispSIN :: Evalable
+lispSIN ind args
+    | length args > 1 = throwE (TooManyArguments ind "SIN" 1)
+    | null args       = throwE (TooFewArguments ind "SIN" 1)
+    | otherwise       =
+        treatAsLispReal (head args) <&> (LispReal ind . sin)
+
+lispSQRT :: Evalable
+lispSQRT ind args
+    | length args > 1 = throwE (TooManyArguments ind "SQRT" 1)
+    | null args       = throwE (TooFewArguments ind "SQRT" 1)
+    | otherwise       =
+        treatAsLispReal (head args) <&> (LispReal ind . sqrt)
+
+lispNUMBERP :: Evalable
+lispNUMBERP ind args
+    | length args > 1 = throwE (TooManyArguments ind "NUMBER?" 1)
+    | null args       = throwE (TooFewArguments ind "NUMBER?" 1)
+    | otherwise       =
+        case head args of
+            (LispReal _ _)      -> return (LispBool ind True)
+            (LispRational _ _ ) -> return (LispBool ind True)
+            (LispInteger _ _)   -> return (LispBool ind True)
+            _                   -> return (LispBool ind False)
