@@ -105,4 +105,6 @@ main = do
             , TestLabel "Lisp Greater Than Or Eq Test 8"      lispGreaterThanOrEqTest8
             , TestLabel "Lisp Greater Than Or Eq Test 9"      lispGreaterThanOrEqTest9
             , TestLabel "Lisp Greater Than Or Eq Test 10"     lispGreaterThanOrEqTest10
+            , TestLabel "Lisp COS Test 1"                     lispCOSTest1
+            , TestLabel "Lisp COS Test 2"                     lispCOSTest2
             ]

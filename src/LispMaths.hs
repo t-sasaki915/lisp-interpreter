@@ -10,19 +10,21 @@ import LispError (RuntimeError(..))
 import Util (getM)
 
 import Control.Monad.Trans.Except (throwE)
+import Data.Functor ((<&>))
 import Data.Ratio ((%), numerator, denominator)
 
 lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
-    [ ("*",  LispProcedure lispMultiple)
-    , ("+",  LispProcedure lispAddition)
-    , ("-",  LispProcedure lispSubtract)
-    , ("/",  LispProcedure lispDivision)
-    , ("<",  LispProcedure lispLessThan)
-    , ("<=", LispProcedure lispLessThanOrEq)
-    , ("=",  LispProcedure lispNumberEq)
-    , (">",  LispProcedure lispGreaterThan)
-    , (">=", LispProcedure lispGreaterThanOrEq)
+    [ ("*",   LispProcedure lispMultiple)
+    , ("+",   LispProcedure lispAddition)
+    , ("-",   LispProcedure lispSubtract)
+    , ("/",   LispProcedure lispDivision)
+    , ("<",   LispProcedure lispLessThan)
+    , ("<=",  LispProcedure lispLessThanOrEq)
+    , ("=",   LispProcedure lispNumberEq)
+    , (">",   LispProcedure lispGreaterThan)
+    , (">=",  LispProcedure lispGreaterThanOrEq)
+    , ("COS", LispProcedure lispCOS)
     ]
 
 finaliseRatCalc :: Int -> Rational -> LispData
@@ -186,3 +188,10 @@ lispGreaterThanOrEq ind args
                     True
                     (zip [0..] vars)
         return (LispBool ind res)
+
+lispCOS :: Evalable
+lispCOS ind args
+    | length args > 1 = throwE (TooManyArguments ind "COS" 1)
+    | null args       = throwE (TooFewArguments ind "COS" 1)
+    | otherwise       =
+        treatAsLispReal (head args) <&> (LispReal ind . cos)

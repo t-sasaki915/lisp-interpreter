@@ -419,3 +419,13 @@ lispGreaterThanOrEqTest10 :: Test
 lispGreaterThanOrEqTest10 = lispMathsTest lispGreaterThanOrEq
     [integer 5]
     (return (boolean True))
+
+lispCOSTest1 :: Test
+lispCOSTest1 = lispMathsTest lispCOS
+    [real 0.0]
+    (return (real 1.0))
+
+lispCOSTest2 :: Test
+lispCOSTest2 = lispMathsTest lispCOS
+    [real 1.0]
+    (return (real 0.5403023))

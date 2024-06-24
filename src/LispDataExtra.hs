@@ -8,6 +8,7 @@ import LispEnv (EvalT)
 import LispError (RuntimeError(..))
 
 import Control.Monad.Trans.Except (throwE)
+import Data.Functor ((<&>))
 import Data.List (find)
 import Data.Maybe (isJust)
 import Data.Ratio ((%), numerator, denominator)
@@ -59,3 +60,6 @@ treatAsLispInts = mapM unwrap
                 return n
             d ->
                 throwE (uncurry IncompatibleType (indAndType d) "NUMBER")
+
+treatAsLispReal :: LispData -> EvalT Float
+treatAsLispReal d = treatAsLispReals [d] <&> head
