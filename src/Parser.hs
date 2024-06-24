@@ -1,4 +1,4 @@
-module Parser (ParseError(..), parse) where
+module Parser (parse) where
 
 import LispData (LispData(..))
 import LispError (ParseError(..))
@@ -16,10 +16,8 @@ data Status = Start Int
             | ReadingStr Int String
             | Ignoring
 
-
 parse :: String -> Except ParseError [LispData]
 parse src = parse' src 0 [] (Start 0) <&> snd
-
 
 parse' :: String -> Int -> [LispData] -> Status ->
           Except ParseError (Int, [LispData])
