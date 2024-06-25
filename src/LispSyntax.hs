@@ -12,9 +12,10 @@ import Control.Monad.Trans.Except (throwE)
 
 lispPredefSyntaxes :: [(String, LispData)]
 lispPredefSyntaxes =
-    [ ("IF"   ,  LispSyntax lispIF)
-    , ("QUOTE",  LispSyntax lispQUOTE)
-    , ("DEFINE", LispSyntax lispDEFINE)
+    [ ("IF"   ,  LispSyntax (-1) lispIF)
+    , ("QUOTE",  LispSyntax (-1) lispQUOTE)
+    , ("DEFINE", LispSyntax (-1) lispDEFINE)
+    , ("LAMBDA", LispSyntax (-1) lispLAMBDA)
     ]
 
 lispIF :: Procedure
@@ -42,7 +43,7 @@ lispDEFINE ind args
         case head args of
             (LispSymbol _ label) -> do
                 expr <- mapM eval (tail args)
-                _    <- putEnvData label (LispVariable (last expr))
+                _    <- putEnvData label (LispVariable ind (last expr))
                 return (LispSymbol ind label)
 
             (LispList n []) ->
@@ -63,8 +64,26 @@ lispDEFINE ind args
                                 args'
                                 (tail args)
 
-                _ <- putEnvData label (LispFunction prog)
+                _ <- putEnvData label (LispFunction ind prog)
                 return (LispSymbol ind label)
 
             d ->
                 throwE (incompatibleType d "SYMBOL")
+
+lispLAMBDA :: Procedure
+lispLAMBDA ind args
+    | length args < 2 = throwE (TooFewArguments ind "LAMBDA" 2)
+    | otherwise       = do
+        bindList <- treatAsLispList (head args)
+        bindings <- mapM treatAsLispSymbol bindList
+        let
+            program :: Procedure
+            program ind' args'
+                | length args' > length bindings =
+                    throwE (TooManyArguments ind' "LAMBDA" (length bindings))
+                | length args' < length bindings =
+                    throwE (TooFewArguments ind' "LAMBDA" (length bindings))
+                | otherwise =
+                    lexicalScope bindings args' (tail args)
+
+        return (LispFunction ind program)

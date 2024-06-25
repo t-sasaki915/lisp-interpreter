@@ -23,9 +23,9 @@ indexAndType = \case
     (LispList n _)      -> (n, "LIST")
     (LispPair n _)      -> (n, "PAIR")
     (LispQuote d)       -> mapSnd ("'" ++) (indexAndType d)
-    (LispFunction _)    -> (-1, "FUNCTION")
-    (LispSyntax _)      -> (-1, "SYNTAX")
-    (LispVariable _)    -> (-1, "VARIABLE")
+    (LispFunction n _)  -> (n, "FUNCTION")
+    (LispSyntax n _)    -> (n, "SYNTAX")
+    (LispVariable n _)  -> (n, "VARIABLE")
     where mapSnd f (a, b) = (a, f b)
 
 toReal :: LispNumber -> Float
@@ -57,6 +57,10 @@ treatAsLispNumber d = throwE (incompatibleType d "NUMBER")
 treatAsLispSymbol :: LispData -> Execution String
 treatAsLispSymbol (LispSymbol _ s) = return s
 treatAsLispSymbol d = throwE (incompatibleType d "SYMBOL")
+
+treatAsLispList :: LispData -> Execution [LispData]
+treatAsLispList (LispList _ l) = return l
+treatAsLispList d = throwE (incompatibleType d "LIST")
 
 unbindEnvData :: String -> Execution ()
 unbindEnvData label = do

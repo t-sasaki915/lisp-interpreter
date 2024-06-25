@@ -17,7 +17,7 @@ eval = \case
     (LispSymbol n s) -> do
         env <- lift get
         case find (\(l, _) -> l == s) env of
-            Just (_, LispVariable d) ->
+            Just (_, LispVariable _ d) ->
                 return d
 
             _ ->
@@ -52,20 +52,34 @@ eval = \case
     (LispList n []) ->
         return (LispBool n False)
 
-    (LispList _ lst) ->
+    (LispList n lst) ->
         case head lst of
-            (LispSymbol n label) -> do
+            (LispSymbol n' label) -> do
                 env <- lift get
                 case find (\(l, _) -> l == label) env of
-                    Just (_, LispSyntax f) ->
-                        f n (drop 1 lst)
+                    Just (_, LispSyntax _ f) ->
+                        f n' (drop 1 lst)
                     
-                    Just (_, LispFunction f) -> do
+                    Just (_, LispFunction _ f) -> do
                         args <- mapM eval (drop 1 lst)
-                        f n args
+                        f n' args
+
+                    Just (_, LispVariable _ f) ->
+                        eval (LispList n (f : drop 1 lst))
 
                     _ ->
-                        throwE (UndefinedFunction n label)
+                        throwE (UndefinedFunction n' label)
+
+            (LispSyntax n' f) ->
+                f n' (drop 1 lst)
+
+            (LispFunction n' f) -> do
+                args <- mapM eval (drop 1 lst)
+                f n' args
+            
+            (LispList n' lst') -> do
+                res <- eval (LispList n' lst')
+                eval (LispList n (res : drop 1 lst))
 
             _ ->
                 throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))

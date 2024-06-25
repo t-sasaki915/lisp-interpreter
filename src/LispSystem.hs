@@ -23,9 +23,9 @@ data LispData = LispInteger Int Integer
               | LispList Int [LispData]
               | LispPair Int (LispData, LispData)
               | LispQuote LispData
-              | LispFunction Procedure
-              | LispSyntax Procedure
-              | LispVariable LispData
+              | LispFunction Int Procedure
+              | LispSyntax Int Procedure
+              | LispVariable Int LispData
               deriving Eq
 
 type LispEnv = [(String, LispData)]
@@ -49,9 +49,9 @@ instance Show LispData where
     show (LispList _ l)      = "(" ++ unwords (map show l) ++ ")"
     show (LispPair _ p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
     show (LispQuote d)       = "'" ++ show d
-    show (LispFunction _)    = "FUNCTION"
-    show (LispSyntax _)      = "FUNCTION"
-    show (LispVariable _)    = "VARIABLE"
+    show (LispFunction _ _)  = "FUNCTION"
+    show (LispSyntax _ _)    = "FUNCTION"
+    show (LispVariable _ _)  = "VARIABLE"
 
 instance Eq LispNumber where
     (==) (LispInteger' z1) (LispInteger' z2) =

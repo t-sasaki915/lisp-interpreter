@@ -10,7 +10,7 @@ import Control.Monad.Trans.Except (throwE)
 
 lispPredefIOFunctions :: [(String, LispData)]
 lispPredefIOFunctions =
-    [ ("DISPLAY", LispFunction lispDISPLAY)
+    [ ("DISPLAY", LispFunction (-1) lispDISPLAY)
     ]
 
 lispDISPLAY :: Procedure
