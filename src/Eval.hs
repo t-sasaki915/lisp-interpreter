@@ -82,7 +82,8 @@ eval = \case
                         f n' args
 
                     Just (_, LispVariable (LispClosure _ binds prog)) -> do
-                        newLexi    <- attribute n' label binds (drop 1 lst)
+                        args       <- mapM eval (drop 1 lst)
+                        newLexi    <- attribute n' label binds args
                         _          <- lift $ put (LispEnv globe newLexi)
                         value      <- eval prog
                         _          <- restoreEnv
