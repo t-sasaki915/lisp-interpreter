@@ -9,10 +9,12 @@ import LispSystem
 import Data.Functor ((<&>))
 
 initEnv :: LispEnv
-initEnv =
-    lispPredefSyntaxes ++
-    lispPredefMathsFunctions ++
-    lispPredefIOFunctions
+initEnv = LispEnv initGlobe []
+    where
+        initGlobe =
+            lispPredefSyntaxes ++
+            lispPredefMathsFunctions ++
+            lispPredefIOFunctions
 
 interpretLisp :: [LispData] -> Execution LispData
 interpretLisp ds = mapM eval ds <&> last

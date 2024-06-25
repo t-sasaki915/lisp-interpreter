@@ -5,10 +5,12 @@ module LispOperation where
 
 import LispError 
 import LispSystem
+import Util ((~>))
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
 import Control.Monad.Trans.State.Strict (get, put)
+import Data.Functor ((<&>))
 import Data.Ratio ((%), numerator, denominator)
 
 indexAndType :: LispData -> (Int, String)
@@ -23,9 +25,7 @@ indexAndType = \case
     (LispList n _)      -> (n, "LIST")
     (LispPair n _)      -> (n, "PAIR")
     (LispQuote d)       -> mapSnd ("'" ++) (indexAndType d)
-    (LispFunction n _)  -> (n, "FUNCTION")
-    (LispSyntax n _)    -> (n, "SYNTAX")
-    (LispVariable n _)  -> (n, "VARIABLE")
+    (LispClosure n _ _) -> (n, "CLOSURE")
     where mapSnd f (a, b) = (a, f b)
 
 toReal :: LispNumber -> Float
@@ -62,14 +62,16 @@ treatAsLispList :: LispData -> Execution [LispData]
 treatAsLispList (LispList _ l) = return l
 treatAsLispList d = throwE (incompatibleType d "LIST")
 
-unbindEnvData :: String -> Execution ()
-unbindEnvData label = do
-    env <- lift get
-    let filtered = filter (\(l, _) -> l /= label) env
-    lift $ put filtered
+transformEnv :: LispEnv -> ([(String, LispEnvData)], [(String, LispEnvData)])
+transformEnv env = (global env, lexical env)
 
-putEnvData :: String -> LispData -> Execution ()
-putEnvData label expr = do
-    _   <- unbindEnvData label
-    env <- lift get
-    lift $ put (env ++ [(label, expr)])
+unbindEnvDataGlobally :: String -> Execution ()
+unbindEnvDataGlobally label = do
+    (globe, lexi) <- lift get <&> transformEnv
+    lift $ put (LispEnv (filter (\(l, _) -> l /= label) globe) lexi)
+
+bindEnvDataGlobally :: String -> LispEnvData -> Execution ()
+bindEnvDataGlobally label envData = do
+    _             <- unbindEnvDataGlobally label
+    (globe, lexi) <- lift get <&> transformEnv
+    lift $ put (LispEnv (globe ++ [label ~> envData]) lexi)

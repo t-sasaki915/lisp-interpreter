@@ -6,32 +6,33 @@ module LispMaths where
 import LispError (RuntimeError(..))
 import LispOperation
 import LispSystem
+import Util ((~>))
 
 import Control.Monad.Trans.Except (throwE)
 import Data.Functor ((<&>))
 import Data.Ratio (numerator, denominator)
 import GHC.Float (powerFloat)
 
-lispPredefMathsFunctions :: [(String, LispData)]
+lispPredefMathsFunctions :: [(String, LispEnvData)]
 lispPredefMathsFunctions =
-    [ ("*",       LispFunction (-1) lispMultiple)
-    , ("+",       LispFunction (-1) lispAddition)
-    , ("-",       LispFunction (-1) lispSubtract)
-    , ("/",       LispFunction (-1) lispDivision)
-    , ("<",       LispFunction (-1) lispLessThan)
-    , ("<=",      LispFunction (-1) lispLessThanOrEq)
-    , ("=",       LispFunction (-1) lispNumberEq)
-    , (">",       LispFunction (-1) lispGreaterThan)
-    , (">=",      LispFunction (-1) lispGreaterThanOrEq)
-    , ("ABS",     LispFunction (-1) lispABS)
-    , ("COS",     LispFunction (-1) lispCOS)
-    , ("EXPT",    LispFunction (-1) lispEXPT)
-    , ("MAX",     LispFunction (-1) lispMAX)
-    , ("MIN",     LispFunction (-1) lispMIN)
-    , ("NOT",     LispFunction (-1) lispNOT)
-    , ("SIN",     LispFunction (-1) lispSIN)
-    , ("SQRT",    LispFunction (-1) lispSQRT)
-    , ("NUMBER?", LispFunction (-1) lispNUMBERP)
+    [ "*"       ~> LispFunction lispMultiple
+    , "+"       ~> LispFunction lispAddition
+    , "-"       ~> LispFunction lispSubtract
+    , "/"       ~> LispFunction lispDivision
+    , "<"       ~> LispFunction lispLessThan
+    , "<="      ~> LispFunction lispLessThanOrEq
+    , "="       ~> LispFunction lispNumberEq
+    , ">"       ~> LispFunction lispGreaterThan
+    , ">="      ~> LispFunction lispGreaterThanOrEq
+    , "ABS"     ~> LispFunction lispABS
+    , "COS"     ~> LispFunction lispCOS
+    , "EXPT"    ~> LispFunction lispEXPT
+    , "MAX"     ~> LispFunction lispMAX
+    , "MIN"     ~> LispFunction lispMIN
+    , "NOT"     ~> LispFunction lispNOT
+    , "SIN"     ~> LispFunction lispSIN
+    , "SQRT"    ~> LispFunction lispSQRT
+    , "NUMBER?" ~> LispFunction lispNUMBERP
     ]
 
 guaranteeNotZero :: Int -> LispNumber -> Execution ()

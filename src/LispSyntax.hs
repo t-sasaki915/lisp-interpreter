@@ -2,20 +2,23 @@
 
 module LispSyntax where
 
-import Eval (eval, lexicalScope)
+import Eval (eval)
 import LispError (RuntimeError(..))
 import LispOperation
 import LispSystem
-import Util (getM, getOrElseM)
+import Util (getM, getOrElseM, (~>))
 
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
+import Control.Monad.Trans.State.Strict (get)
+import Data.Functor ((<&>))
 
-lispPredefSyntaxes :: [(String, LispData)]
+lispPredefSyntaxes :: [(String, LispEnvData)]
 lispPredefSyntaxes =
-    [ ("IF"   ,  LispSyntax (-1) lispIF)
-    , ("QUOTE",  LispSyntax (-1) lispQUOTE)
-    , ("DEFINE", LispSyntax (-1) lispDEFINE)
-    , ("LAMBDA", LispSyntax (-1) lispLAMBDA)
+    [ "IF"     ~> LispSyntax lispIF
+    , "QUOTE"  ~> LispSyntax lispQUOTE
+    , "DEFINE" ~> LispSyntax lispDEFINE
+    , "LAMBDA" ~> LispSyntax lispLAMBDA
     ]
 
 lispIF :: Procedure
@@ -43,28 +46,7 @@ lispDEFINE ind args
         case head args of
             (LispSymbol _ label) -> do
                 expr <- mapM eval (tail args)
-                _    <- putEnvData label (LispVariable ind (last expr))
-                return (LispSymbol ind label)
-
-            (LispList n []) ->
-                throwE (TooFewArguments n "Definition" 1)
-
-            (LispList _ binds) -> do
-                label     <- treatAsLispSymbol (head binds)
-                argLabels <- mapM treatAsLispSymbol (drop 1 binds)
-                let prog :: Procedure
-                    prog ind' args'
-                        | length args' > length argLabels =
-                            throwE (TooManyArguments ind' label (length argLabels))
-                        | length args' < length argLabels =
-                            throwE (TooFewArguments ind' label (length argLabels))
-                        | otherwise =
-                            lexicalScope
-                                argLabels
-                                args'
-                                (tail args)
-
-                _ <- putEnvData label (LispFunction ind prog)
+                _    <- bindEnvDataGlobally label (LispVariable (last expr))
                 return (LispSymbol ind label)
 
             d ->
@@ -74,16 +56,9 @@ lispLAMBDA :: Procedure
 lispLAMBDA ind args
     | length args < 2 = throwE (TooFewArguments ind "LAMBDA" 2)
     | otherwise       = do
-        bindList <- treatAsLispList (head args)
-        bindings <- mapM treatAsLispSymbol bindList
-        let
-            program :: Procedure
-            program ind' args'
-                | length args' > length bindings =
-                    throwE (TooManyArguments ind' "LAMBDA" (length bindings))
-                | length args' < length bindings =
-                    throwE (TooFewArguments ind' "LAMBDA" (length bindings))
-                | otherwise =
-                    lexicalScope bindings args' (tail args)
+        (_, lexi) <- lift get <&> transformEnv
+        bindList  <- treatAsLispList (head args)
+        bindings  <- mapM treatAsLispSymbol bindList
+        let newLexi = lexi ++ map (~> LispVariableBind) bindings
 
-        return (LispFunction ind program)
+        return (LispClosure ind newLexi (args !! 1))

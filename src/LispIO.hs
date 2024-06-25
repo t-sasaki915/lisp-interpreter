@@ -4,13 +4,14 @@ module LispIO where
 
 import LispError (RuntimeError(..))
 import LispSystem
+import Util ((~>))
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
 
-lispPredefIOFunctions :: [(String, LispData)]
+lispPredefIOFunctions :: [(String, LispEnvData)]
 lispPredefIOFunctions =
-    [ ("DISPLAY", LispFunction (-1) lispDISPLAY)
+    [ "DISPLAY" ~> LispFunction lispDISPLAY
     ]
 
 lispDISPLAY :: Procedure
