@@ -3,39 +3,38 @@
 
 module LispMaths where
 
-import LispData
-import LispDataExtra
-import LispEnv
 import LispError (RuntimeError(..))
+import LispOperation
+import LispSystem
 
 import Control.Monad.Trans.Except (throwE)
 import Data.Functor ((<&>))
 import Data.Ratio (numerator, denominator)
 import GHC.Float (powerFloat)
 
-lispPredefMathsFunctions :: [(String, LispEnvData)]
+lispPredefMathsFunctions :: [(String, LispData)]
 lispPredefMathsFunctions =
-    [ ("*",       LispProcedure lispMultiple)
-    , ("+",       LispProcedure lispAddition)
-    , ("-",       LispProcedure lispSubtract)
-    , ("/",       LispProcedure lispDivision)
-    , ("<",       LispProcedure lispLessThan)
-    , ("<=",      LispProcedure lispLessThanOrEq)
-    , ("=",       LispProcedure lispNumberEq)
-    , (">",       LispProcedure lispGreaterThan)
-    , (">=",      LispProcedure lispGreaterThanOrEq)
-    , ("ABS",     LispProcedure lispABS)
-    , ("COS",     LispProcedure lispCOS)
-    , ("EXPT",    LispProcedure lispEXPT)
-    , ("MAX",     LispProcedure lispMAX)
-    , ("MIN",     LispProcedure lispMIN)
-    , ("NOT",     LispProcedure lispNOT)
-    , ("SIN",     LispProcedure lispSIN)
-    , ("SQRT",    LispProcedure lispSQRT)
-    , ("NUMBER?", LispProcedure lispNUMBERP)
+    [ ("*",       LispFunction lispMultiple)
+    , ("+",       LispFunction lispAddition)
+    , ("-",       LispFunction lispSubtract)
+    , ("/",       LispFunction lispDivision)
+    , ("<",       LispFunction lispLessThan)
+    , ("<=",      LispFunction lispLessThanOrEq)
+    , ("=",       LispFunction lispNumberEq)
+    , (">",       LispFunction lispGreaterThan)
+    , (">=",      LispFunction lispGreaterThanOrEq)
+    , ("ABS",     LispFunction lispABS)
+    , ("COS",     LispFunction lispCOS)
+    , ("EXPT",    LispFunction lispEXPT)
+    , ("MAX",     LispFunction lispMAX)
+    , ("MIN",     LispFunction lispMIN)
+    , ("NOT",     LispFunction lispNOT)
+    , ("SIN",     LispFunction lispSIN)
+    , ("SQRT",    LispFunction lispSQRT)
+    , ("NUMBER?", LispFunction lispNUMBERP)
     ]
 
-guaranteeNotZero :: Int -> LispNumber -> EvalT ()
+guaranteeNotZero :: Int -> LispNumber -> Execution ()
 guaranteeNotZero _ (LispInteger' n)  | n /= 0 = return ()
 guaranteeNotZero _ (LispRational' r) | r /= 0 = return ()
 guaranteeNotZero _ (LispReal' r)     | r /= 0 = return ()
@@ -69,17 +68,17 @@ power (LispInteger' base) (LispInteger' pow)
     | pow < 0   = LispInteger' 1 / power (LispInteger' base) (LispInteger' (abs pow))
     | otherwise = LispInteger' (base ^ pow)
 
-lispMultiple :: Evalable
+lispMultiple :: Procedure
 lispMultiple ind args =
     mapM treatAsLispNumber args >>=
         (fromLispNumber ind . product)
 
-lispAddition :: Evalable
+lispAddition :: Procedure
 lispAddition ind args =
     mapM treatAsLispNumber args >>=
         (fromLispNumber ind . sum)
 
-lispSubtract :: Evalable
+lispSubtract :: Procedure
 lispSubtract ind args
     | null args        = throwE (TooFewArguments ind "-" 1)
     | length args == 1 =
@@ -89,7 +88,7 @@ lispSubtract ind args
         mapM treatAsLispNumber args >>=
             (fromLispNumber ind . foldl1 (-))
 
-lispDivision :: Evalable
+lispDivision :: Procedure
 lispDivision ind args
     | null args        = throwE (TooFewArguments ind "/" 1)
     | length args == 1 =
@@ -101,7 +100,7 @@ lispDivision ind args
             mapM (guaranteeNotZero ind) (tail nums) >>=
                 const (fromLispNumber ind (foldl1 (/) nums)))
 
-lispLessThan :: Evalable
+lispLessThan :: Procedure
 lispLessThan ind args
     | null args        = throwE (TooFewArguments ind "<" 1)
     | length args == 1 = return (LispBool ind True)
@@ -118,7 +117,7 @@ lispLessThan ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
-lispLessThanOrEq :: Evalable
+lispLessThanOrEq :: Procedure
 lispLessThanOrEq ind args
     | null args        = throwE (TooFewArguments ind "<=" 1)
     | length args == 1 = return (LispBool ind True)
@@ -135,7 +134,7 @@ lispLessThanOrEq ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
-lispNumberEq :: Evalable
+lispNumberEq :: Procedure
 lispNumberEq ind args
     | null args        = throwE (TooFewArguments ind "=" 1)
     | length args == 1 = return (LispBool ind True)
@@ -152,7 +151,7 @@ lispNumberEq ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
-lispGreaterThan :: Evalable
+lispGreaterThan :: Procedure
 lispGreaterThan ind args
     | null args        = throwE (TooFewArguments ind ">" 1)
     | length args == 1 = return (LispBool ind True)
@@ -169,7 +168,7 @@ lispGreaterThan ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
-lispGreaterThanOrEq :: Evalable
+lispGreaterThanOrEq :: Procedure
 lispGreaterThanOrEq ind args
     | null args        = throwE (TooFewArguments ind ">=" 1)
     | length args == 1 = return (LispBool ind True)
@@ -186,7 +185,7 @@ lispGreaterThanOrEq ind args
                     (zip [0..] vars)
         return (LispBool ind res)
 
-lispABS :: Evalable
+lispABS :: Procedure
 lispABS ind args
     | length args > 1 = throwE (TooManyArguments ind "ABS" 1)
     | null args       = throwE (TooFewArguments ind "ABS" 1)
@@ -194,7 +193,7 @@ lispABS ind args
         treatAsLispNumber (head args) >>=
             (fromLispNumber ind . abs)
 
-lispCOS :: Evalable
+lispCOS :: Procedure
 lispCOS ind args
     | length args > 1 = throwE (TooManyArguments ind "COS" 1)
     | null args       = throwE (TooFewArguments ind "COS" 1)
@@ -202,7 +201,7 @@ lispCOS ind args
         treatAsLispNumber (head args) >>=
             (fromLispNumber ind . LispReal' . cos . toReal)
 
-lispEXPT :: Evalable
+lispEXPT :: Procedure
 lispEXPT ind args
     | length args > 2 = throwE (TooManyArguments ind "EXPT" 2)
     | length args < 2 = throwE (TooFewArguments ind "EXPT" 2)
@@ -211,28 +210,28 @@ lispEXPT ind args
         pow  <- treatAsLispNumber (args !! 1)
         fromLispNumber ind (power base pow)
 
-lispMAX :: Evalable
+lispMAX :: Procedure
 lispMAX ind args
     | null args = throwE (TooFewArguments ind "MAX" 1)
     | otherwise =
         mapM treatAsLispNumber args >>=
             (fromLispNumber ind . maximum)
 
-lispMIN :: Evalable
+lispMIN :: Procedure
 lispMIN ind args
     | null args = throwE (TooFewArguments ind "MIN" 1)
     | otherwise =
         mapM treatAsLispNumber args >>=
             (fromLispNumber ind . minimum)
 
-lispNOT :: Evalable
+lispNOT :: Procedure
 lispNOT ind args
     | length args > 1 = throwE (TooManyArguments ind "NOT" 1)
     | null args       = throwE (TooFewArguments ind "NOT" 1)
     | otherwise       =
         treatAsLispBool (head args) <&> (LispBool ind . not)
 
-lispSIN :: Evalable
+lispSIN :: Procedure
 lispSIN ind args
     | length args > 1 = throwE (TooManyArguments ind "SIN" 1)
     | null args       = throwE (TooFewArguments ind "SIN" 1)
@@ -240,7 +239,7 @@ lispSIN ind args
         treatAsLispNumber (head args) >>=
             (fromLispNumber ind . LispReal' . sin . toReal)
 
-lispSQRT :: Evalable
+lispSQRT :: Procedure
 lispSQRT ind args
     | length args > 1 = throwE (TooManyArguments ind "SQRT" 1)
     | null args       = throwE (TooFewArguments ind "SQRT" 1)
@@ -248,7 +247,7 @@ lispSQRT ind args
         treatAsLispNumber (head args) >>=
             (fromLispNumber ind . LispReal' . sqrt . toReal)
 
-lispNUMBERP :: Evalable
+lispNUMBERP :: Procedure
 lispNUMBERP ind args
     | length args > 1 = throwE (TooManyArguments ind "NUMBER?" 1)
     | null args       = throwE (TooFewArguments ind "NUMBER?" 1)

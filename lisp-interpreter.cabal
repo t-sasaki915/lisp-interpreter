@@ -25,13 +25,13 @@ source-repository head
 library
   exposed-modules:
       Eval
-      LispData
-      LispDataExtra
-      LispEnv
       LispError
       LispInterpreter
+      LispIO
       LispMaths
+      LispOperation
       LispSyntax
+      LispSystem
       Parser
       Util
   other-modules:

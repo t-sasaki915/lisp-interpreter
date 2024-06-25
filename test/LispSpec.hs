@@ -2,9 +2,8 @@
 
 module LispSpec where
 
-import LispData (LispData(..))
-import LispEnv (Evalable, Eval)
 import LispInterpreter (initEnv)
+import LispSystem
 
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.State.Strict (runStateT)
@@ -32,7 +31,7 @@ symbol = LispSymbol 0
 string :: String -> LispData
 string = LispString 0
 
-lispProcedureTest :: Evalable -> [LispData] -> Eval -> Test
+lispProcedureTest :: Procedure -> [LispData] -> Execution LispData -> Test
 lispProcedureTest f args e =
     let
         result =

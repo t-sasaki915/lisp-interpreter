@@ -1,8 +1,8 @@
 module Main (main) where
 
-import LispEnv (LispEnv)
 import LispError (traceError)
 import LispInterpreter (initEnv, interpretLisp)
+import LispSystem (LispEnv)
 import Parser (parse)
 
 import Control.Monad.Trans.Class (lift)

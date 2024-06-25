@@ -1,6 +1,6 @@
 module Parser (parse) where
 
-import LispData (LispData(..))
+import LispSystem (LispData(..))
 import LispError (ParseError(..))
 
 import Control.Monad.Trans.Except (Except, throwE)

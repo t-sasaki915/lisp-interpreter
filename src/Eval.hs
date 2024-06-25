@@ -1,18 +1,27 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Eval (eval) where
+module Eval (eval, lexicalScope) where
 
-import LispData
-import LispEnv
 import LispError (RuntimeError(..))
+import LispOperation
+import LispSystem
 
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
+import Control.Monad.Trans.State.Strict (get)
+import Data.List (find)
 import Data.Ratio ((%), numerator, denominator)
 
-eval :: LispData -> Eval
+eval :: LispData -> Execution LispData
 eval = \case
-    (LispSymbol n s) ->
-        variableReference (LispSymbol n s)
+    (LispSymbol n s) -> do
+        env <- lift get
+        case find (\(l, _) -> l == s) env of
+            Just (_, LispVariable d) ->
+                return d
+
+            _ ->
+                throwE (UndefinedVariable n s)
 
     (LispQuote d) ->
         return d
@@ -43,24 +52,46 @@ eval = \case
     (LispList n []) ->
         return (LispBool n False)
 
-    (LispList _ [LispSymbol n label]) -> do
-        sLabels <- syntaxLabels
-        if label `elem` sLabels then do
-            f <- syntaxReference (LispSymbol n label)
-            f n []
-        else do
-            f <- procedureReference (LispSymbol n label)
-            f n []
-    
-    (LispList _ (LispSymbol n label : args)) -> do
-        sLabels <- syntaxLabels
-        if label `elem` sLabels then do
-            f <- syntaxReference (LispSymbol n label)
-            f n args
-        else do
-            f <- procedureReference (LispSymbol n label)
-            args' <- mapM eval args
-            f n args'
+    (LispList _ lst) ->
+        case head lst of
+            (LispSymbol n label) -> do
+                env <- lift get
+                case find (\(l, _) -> l == label) env of
+                    Just (_, LispSyntax f) ->
+                        f n (drop 1 lst)
+                    
+                    Just (_, LispFunction f) -> do
+                        args <- mapM eval (drop 1 lst)
+                        f n args
 
-    (LispList _ xs) ->
-        throwE (IllegalFunctionCall (index (head xs)))
+                    _ ->
+                        throwE (UndefinedFunction n label)
+
+            _ ->
+                throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))
+    
+    _ ->
+        throwE (IllegalBehaviour 0)
+
+lexicalScope :: [String] -> [LispData] -> [LispData] -> Execution LispData
+lexicalScope binds tempData progs = do
+    initialEnv <- lift get
+    let initialBinds =
+            zipWith
+                (\l _ -> case find (\(l', _) -> l == l') initialEnv of
+                    Just (_, d) -> (l, Just d)
+                    Nothing     -> (l, Nothing)
+                )
+                binds
+                tempData
+
+    mapM_ (uncurry putEnvData) (zip binds tempData)
+    res <- mapM eval progs
+
+    mapM_
+        (\(l, md) -> case md of
+            Just d  -> putEnvData l d
+            Nothing -> unbindEnvData l
+        )
+        initialBinds
+    return (last res)
