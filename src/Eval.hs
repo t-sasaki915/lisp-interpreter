@@ -12,30 +12,29 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
 import Control.Monad.Trans.State.Strict (get)
 import Data.Functor ((<&>))
-import Data.List (find)
 import Data.Ratio ((%), numerator, denominator)
 
 eval :: LispData -> Execution LispData
 eval = \case
-    (LispSymbol n s) -> do
+    (LispSymbol n label) -> do
         (globe, lexi) <- lift get <&> transformEnv
-        case find (\(l, _) -> l == s) lexi of
-            Just (_, LispVariable d) ->
+        case lookup label lexi of
+            Just (LispVariable d) ->
                 return d
 
-            Just (_, LispVariableBind) ->
-                throwE (UninitialisedVariable n s)
+            Just LispVariableBind ->
+                throwE (UninitialisedVariable n label)
 
             _ ->
-                case find (\(l, _) -> l == s) globe of
-                    Just (_, LispVariable d) ->
+                case lookup label globe of
+                    Just (LispVariable d) ->
                         return d
 
-                    Just (_, LispVariableBind) ->
-                        throwE (UninitialisedVariable n s)
+                    Just LispVariableBind ->
+                        throwE (UninitialisedVariable n label)
 
                     _ ->
-                        throwE (UndefinedVariable n s)
+                        throwE (UndefinedVariable n label)
 
     (LispQuote d) ->
         return d
@@ -73,15 +72,15 @@ eval = \case
         case head lst of
             (LispSymbol n' label) -> do
                 (globe, _) <- lift get <&> transformEnv
-                case find (\(l, _) -> l == label) globe of
-                    Just (_, LispSyntax f) ->
+                case lookup label globe of
+                    Just (LispSyntax f) ->
                         f n' (drop 1 lst)
 
-                    Just (_, LispFunction f) -> do
+                    Just (LispFunction f) -> do
                         args <- mapM eval (drop 1 lst)
                         f n' args
 
-                    Just (_, LispVariable (LispClosure _ binds progs)) -> do
+                    Just (LispVariable (LispClosure _ binds progs)) -> do
                         args    <- mapM eval (drop 1 lst)
                         newLexi <- attribute n' label binds args
                         _       <- lexicalScope newLexi
@@ -89,10 +88,10 @@ eval = \case
                         _       <- finaliseLexicalScope
                         return (last values)
 
-                    Just (_, LispVariable _) ->
+                    Just (LispVariable _) ->
                         throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))
                        
-                    Just (_, LispVariableBind) ->
+                    Just LispVariableBind ->
                         throwE (UninitialisedVariable n' label)
 
                     Nothing ->

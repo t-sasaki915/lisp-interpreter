@@ -76,6 +76,17 @@ bindEnvDataGlobally label envData = do
     (globe, lexi) <- lift get <&> transformEnv
     lift $ put (LispEnv (globe ++ [label ~> envData]) lexi)
 
+unbindEnvDataLexically :: String -> Execution ()
+unbindEnvDataLexically label = do
+    (globe, lexi) <- lift get <&> transformEnv
+    lift $ put (LispEnv globe (filter (\(l, _) -> l /= label) lexi))
+
+bindEnvDataLexically :: String -> LispEnvData -> Execution ()
+bindEnvDataLexically label envData = do
+    _             <- unbindEnvDataLexically label
+    (globe, lexi) <- lift get <&> transformEnv
+    lift $ put (LispEnv globe (lexi ++ [label ~> envData]))
+
 lexicalScope :: [(String, LispEnvData)] -> Execution ()
 lexicalScope binds = do
     (globe, lexi) <- lift get <&> transformEnv

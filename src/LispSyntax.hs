@@ -20,6 +20,7 @@ lispPredefSyntaxes =
     , "QUOTE"  ~> LispSyntax lispQUOTE
     , "DEFINE" ~> LispSyntax lispDEFINE
     , "LET"    ~> LispSyntax lispLET
+    , "SET!"   ~> LispSyntax lispSETQ
     , "LAMBDA" ~> LispSyntax lispLAMBDA
     , "BEGIN"  ~> LispSyntax lispBEGIN
     ]
@@ -102,6 +103,30 @@ lispLET ind args
         values <- mapM eval (drop 1 args)
         _      <- finaliseLexicalScope
         return (last values)
+
+lispSETQ :: Procedure
+lispSETQ ind args
+    | length args < 2 = throwE (TooFewArguments ind "SET!" 2)
+    | otherwise       = do
+        (globe, lexi) <- lift get <&> transformEnv
+        label <- treatAsLispSymbol (head args)
+        case lookup label lexi of
+            Just (LispVariable _) -> rebind label bindEnvDataLexically
+
+            Just LispVariableBind -> rebind label bindEnvDataLexically
+            
+            _ ->
+                case lookup label globe of
+                    Just (LispVariable _) -> rebind label bindEnvDataGlobally
+
+                    Just LispVariableBind -> rebind label bindEnvDataGlobally
+
+                    _ -> throwE (UndefinedVariable ind label)
+    where
+        rebind label binder = do
+            value <- mapM eval (drop 1 args) <&> last
+            _     <- binder label (LispVariable value)
+            return value
 
 lispLAMBDA :: Procedure
 lispLAMBDA ind args
