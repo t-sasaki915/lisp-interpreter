@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
+{-# LANGUAGE LambdaCase #-}
 
 module LispSyntax where
 
@@ -18,6 +19,7 @@ lispPredefSyntaxes =
     [ "IF"     ~> LispSyntax lispIF
     , "QUOTE"  ~> LispSyntax lispQUOTE
     , "DEFINE" ~> LispSyntax lispDEFINE
+    , "LET"    ~> LispSyntax lispLET
     , "LAMBDA" ~> LispSyntax lispLAMBDA
     , "BEGIN"  ~> LispSyntax lispBEGIN
     ]
@@ -55,7 +57,7 @@ lispDEFINE ind args
                 expr <- mapM eval (tail args)
                 _    <- bindEnvDataGlobally label (LispVariable (last expr))
                 return (LispSymbol ind label)
-            
+
             (LispList n []) ->
                 throwE (TooFewArguments n "Binding" 1)
 
@@ -68,6 +70,38 @@ lispDEFINE ind args
 
             d ->
                 throwE (incompatibleType d "SYMBOL")
+
+lispLET :: Procedure
+lispLET ind args
+    | length args < 2 = throwE (TooFewArguments ind "LET" 2)
+    | otherwise       = do
+        bindList <- treatAsLispList (head args)
+        bindings <-
+                mapM
+                    (\case
+                        (LispSymbol n label) ->
+                            return (label ~> LispVariable (LispBool n False))
+
+                        (LispList n lst) | length lst < 2 ->
+                            throwE (TooFewArguments n "Binding" 2)
+
+                        (LispList n lst) | length lst > 2 ->
+                            throwE (TooManyArguments n "Binding" 2)
+
+                        (LispList _ lst) -> do
+                            label <- treatAsLispSymbol (head lst)
+                            value <- eval (lst !! 1)
+                            return (label ~> LispVariable value)
+
+                        d ->
+                            throwE (incompatibleType d "SYMBOL")
+                    )
+                    bindList
+
+        _      <- lexicalScope bindings
+        values <- mapM eval (drop 1 args)
+        _      <- finaliseLexicalScope
+        return (last values)
 
 lispLAMBDA :: Procedure
 lispLAMBDA ind args

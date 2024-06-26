@@ -10,7 +10,7 @@ import Util ((~>))
 import Control.Monad (foldM)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
-import Control.Monad.Trans.State.Strict (get, put)
+import Control.Monad.Trans.State.Strict (get)
 import Data.Functor ((<&>))
 import Data.List (find)
 import Data.Ratio ((%), numerator, denominator)
@@ -84,9 +84,9 @@ eval = \case
                     Just (_, LispVariable (LispClosure _ binds progs)) -> do
                         args    <- mapM eval (drop 1 lst)
                         newLexi <- attribute n' label binds args
-                        _       <- lift $ put (LispEnv globe newLexi)
+                        _       <- lexicalScope newLexi
                         values  <- mapM eval progs
-                        _       <- restoreEnv
+                        _       <- finaliseLexicalScope
                         return (last values)
 
                     Just (_, LispVariable _) ->
@@ -121,9 +121,3 @@ attribute ind label lexi args = do
     if refIndex == length args
         then return lexi'
         else throwE (TooManyArguments ind label refIndex)
-
-restoreEnv :: Execution ()
-restoreEnv = do
-    (globe, _) <- lift get <&> transformEnv
-    _          <- lift $ put (LispEnv globe [])
-    return ()
