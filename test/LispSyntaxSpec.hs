@@ -21,3 +21,18 @@ lispQUOTETest1 :: Test
 lispQUOTETest1 = lispProcedureTest lispQUOTE
     [lispList [symbol "+", integer 1, integer 2, integer 3]]
     (return (lispList [symbol "+", integer 1, integer 2, integer 3]))
+
+lispBEGINTest1 :: Test
+lispBEGINTest1 = lispProcedureTest lispBEGIN
+    [integer 1, integer 2, integer 3, integer 4, integer 5]
+    (return (integer 5))
+
+lispBEGINTest2 :: Test
+lispBEGINTest2 = lispProcedureTest lispBEGIN
+    [integer 1, integer 2, lispList [symbol "SIN", real 1.0]]
+    (return (real 0.84147096))
+
+lispBEGINTest3 :: Test
+lispBEGINTest3 = lispProcedureTest lispBEGIN
+    []
+    (return (boolean False))

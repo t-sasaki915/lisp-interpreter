@@ -19,6 +19,7 @@ lispPredefSyntaxes =
     , "QUOTE"  ~> LispSyntax lispQUOTE
     , "DEFINE" ~> LispSyntax lispDEFINE
     , "LAMBDA" ~> LispSyntax lispLAMBDA
+    , "BEGIN"  ~> LispSyntax lispBEGIN
     ]
 
 makeClosure :: Int -> [String] -> [LispData] -> Execution LispData
@@ -76,3 +77,8 @@ lispLAMBDA ind args
         bindings <- mapM treatAsLispSymbol bindList
 
         makeClosure ind bindings (drop 1 args)
+
+lispBEGIN :: Procedure
+lispBEGIN ind args
+    | null args = return (LispBool ind False)
+    | otherwise = mapM eval args <&> last
