@@ -38,3 +38,23 @@ lexicalScopeTest1 = lexicalScopeTest
     )
     (LispInteger 5)
 
+lexicalScopeTest2 :: Test
+lexicalScopeTest2 = lexicalScopeTest
+    (unlines
+        [ "(define *a* 0)"
+        , "(set! *a* 5)"
+        , "(let ((*a* 3)) *a*)"
+        ]
+    )
+    (LispInteger 3)
+
+lexicalScopeTest3 :: Test
+lexicalScopeTest3 = lexicalScopeTest
+    (unlines
+        [ "(define *a* 0)"
+        , "(set! *a* 5)"
+        , "(let ((*a* 3)) *a*)"
+        , "*a*"
+        ]
+    )
+    (LispInteger 5)
