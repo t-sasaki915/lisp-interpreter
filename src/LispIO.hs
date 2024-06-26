@@ -15,9 +15,9 @@ lispPredefIOFunctions =
     ]
 
 lispDISPLAY :: Procedure
-lispDISPLAY ind args
-    | length args > 1 = throwE (TooManyArguments ind "DISPLAY" 1)
-    | null args       = throwE (TooFewArguments ind "DISPLAY" 1)
+lispDISPLAY args
+    | length args > 1 = throwE (TooManyArguments "DISPLAY" 1)
+    | null args       = throwE (TooFewArguments "DISPLAY" 1)
     | otherwise       = do
         _ <- lift $ lift $ print (head args)
-        return (LispBool ind False)
+        return (LispBool False)

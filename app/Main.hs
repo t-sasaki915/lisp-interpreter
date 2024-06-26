@@ -1,6 +1,5 @@
 module Main (main) where
 
-import LispError (traceError)
 import LispInterpreter (initEnv, interpretLisp)
 import LispSystem (LispEnv)
 import Parser (parse)
@@ -15,8 +14,8 @@ program = runExceptT $ do
     args   <- lift2 getArgs
     src    <- lift2 $ readFile (head args)
 
-    parsed <- withExceptT (traceError src) (exceptT $ parse src)
-    result <- withExceptT (traceError src) (interpretLisp parsed)
+    parsed <- withExceptT show (exceptT $ parse src)
+    result <- withExceptT show (interpretLisp parsed)
 
     _      <- lift2 $ print result
 

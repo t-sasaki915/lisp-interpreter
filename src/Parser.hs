@@ -29,7 +29,7 @@ parse' :: String -> Int -> Status -> Except ParseError (Int, LispData)
 parse' src i status | i >= length src =
     case status of
         (ReadingSymb nestDep buffer) -> do
-            symb <- finaliseRead (i - 1) buffer <&> mkQuoteNest nestDep
+            symb <- finaliseRead buffer <&> mkQuoteNest nestDep
             return (i - 1, symb)
 
         _ ->
@@ -53,7 +53,7 @@ parse' src i (Start nestDep) =
             parse' src (i + 1) (Start nestDep)
 
         ')' ->
-            throwE (UnexpectedToken i ')')
+            throwE (UnexpectedToken ')')
         
         c ->
             parse' src (i + 1) (ReadingSymb nestDep [c])
@@ -61,7 +61,7 @@ parse' src i (Start nestDep) =
 parse' src i (CollectingElems nestDep lst) =
     case src !! i of
         ')' ->
-            return (i, mkQuoteNest nestDep (LispList i lst))
+            return (i, mkQuoteNest nestDep (LispList lst))
 
         _ -> do
             (i', dat) <- parse' src i (Start 0)
@@ -70,7 +70,7 @@ parse' src i (CollectingElems nestDep lst) =
 parse' src i (ReadingStr nestDep buffer) =
     case src !! i of
         '"' ->
-            return (i, mkQuoteNest nestDep (LispString i buffer))
+            return (i, mkQuoteNest nestDep (LispString buffer))
 
         c ->
             parse' src (i + 1) (ReadingStr nestDep (buffer ++ [c]))
@@ -78,7 +78,7 @@ parse' src i (ReadingStr nestDep buffer) =
 parse' src i (ReadingSymb nestDep buffer) =
     case src !! i of
         c | c `elem` ['(', ')', '\'', '"', ';', ' ', '\t', '\n'] -> do
-            symb <- finaliseRead (i - 1) buffer <&> mkQuoteNest nestDep
+            symb <- finaliseRead buffer <&> mkQuoteNest nestDep
             return (i - 1, symb)
 
         c ->
@@ -96,45 +96,45 @@ mkQuoteNest :: Int -> LispData -> LispData
 mkQuoteNest 0 d = d
 mkQuoteNest n d = mkQuoteNest (n - 1) (LispQuote d)
 
-finaliseRead :: Int -> String -> Except ParseError LispData
-finaliseRead n ('#' : '\\' : [x]) =
-    return (LispCharacter n x)
+finaliseRead :: String -> Except ParseError LispData
+finaliseRead ('#' : '\\' : [x]) =
+    return (LispCharacter x)
 
-finaliseRead n ('#' : '\\' : xs)  =
+finaliseRead ('#' : '\\' : xs)  =
     case xs of
-        "Backspace" -> return (LispCharacter n '\b')
-        "Tab"       -> return (LispCharacter n '\t')
-        "Page"      -> return (LispCharacter n '\f')
-        "Linefeed"  -> return (LispCharacter n '\n')
-        "Return"    -> return (LispCharacter n '\r')
-        _           -> throwE (UnknownChar n xs)
+        "Backspace" -> return (LispCharacter '\b')
+        "Tab"       -> return (LispCharacter '\t')
+        "Page"      -> return (LispCharacter '\f')
+        "Linefeed"  -> return (LispCharacter '\n')
+        "Return"    -> return (LispCharacter '\r')
+        _           -> throwE (UnknownChar xs)
 
-finaliseRead n buffer =
+finaliseRead buffer =
     case readMaybe buffer :: Maybe Integer of
         Just z ->
-            return (LispInteger n z)
+            return (LispInteger z)
 
         Nothing ->
             case readMaybe buffer :: Maybe Float of
                 Just f ->
-                    return (LispReal n f)
+                    return (LispReal f)
     
                 Nothing ->
                     let upperCase = map toUpper buffer in
                     case upperCase of
                         "#T" ->
-                            return (LispBool n True)
+                            return (LispBool True)
                         "#F" ->
-                            return (LispBool n False)
+                            return (LispBool False)
 
                         _ | upperCase =~ "[0-9]+\\/[0-9]+" == upperCase ->
                             case mapT read (break' (== '/') upperCase) of
-                                (_, 0) -> throwE (ZeroDivideCalculation' n)
-                                (a, 1) -> return (LispInteger n a)
-                                (a, b) -> return (LispRational n (a % b))
+                                (_, 0) -> throwE ZeroDivideCalculation'
+                                (a, 1) -> return (LispInteger a)
+                                (a, b) -> return (LispRational (a % b))
 
                         _ ->
-                            return (LispSymbol n upperCase)
+                            return (LispSymbol upperCase)
     where
         mapT f (a, b) = (f a, f b)
         break' f xs = let (a, b) = break f xs in (a, tail b)

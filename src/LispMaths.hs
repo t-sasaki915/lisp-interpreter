@@ -35,11 +35,11 @@ lispPredefMathsFunctions =
     , "NUMBER?" ~> LispFunction lispNUMBERP
     ]
 
-guaranteeNotZero :: Int -> LispNumber -> Execution ()
-guaranteeNotZero _ (LispInteger' n)  | n /= 0 = return ()
-guaranteeNotZero _ (LispRational' r) | r /= 0 = return ()
-guaranteeNotZero _ (LispReal' r)     | r /= 0 = return ()
-guaranteeNotZero n _ = throwE (ZeroDivideCalculation n)
+guaranteeNotZero :: LispNumber -> Execution ()
+guaranteeNotZero (LispInteger' n)  | n /= 0 = return ()
+guaranteeNotZero (LispRational' r) | r /= 0 = return ()
+guaranteeNotZero (LispReal' r)     | r /= 0 = return ()
+guaranteeNotZero _ = throwE ZeroDivideCalculation
 
 power :: LispNumber -> LispNumber -> LispNumber
 power (LispReal' base) (LispReal' pow) =
@@ -70,41 +70,41 @@ power (LispInteger' base) (LispInteger' pow)
     | otherwise = LispInteger' (base ^ pow)
 
 lispMultiple :: Procedure
-lispMultiple ind args =
+lispMultiple args =
     mapM treatAsLispNumber args >>=
-        (fromLispNumber ind . product)
+        (fromLispNumber . product)
 
 lispAddition :: Procedure
-lispAddition ind args =
+lispAddition args =
     mapM treatAsLispNumber args >>=
-        (fromLispNumber ind . sum)
+        (fromLispNumber . sum)
 
 lispSubtract :: Procedure
-lispSubtract ind args
-    | null args        = throwE (TooFewArguments ind "-" 1)
+lispSubtract args
+    | null args        = throwE (TooFewArguments "-" 1)
     | length args == 1 =
         treatAsLispNumber (head args) >>=
-            (fromLispNumber ind . negate)
+            (fromLispNumber . negate)
     | otherwise        =
         mapM treatAsLispNumber args >>=
-            (fromLispNumber ind . foldl1 (-))
+            (fromLispNumber . foldl1 (-))
 
 lispDivision :: Procedure
-lispDivision ind args
-    | null args        = throwE (TooFewArguments ind "/" 1)
+lispDivision args
+    | null args        = throwE (TooFewArguments "/" 1)
     | length args == 1 =
         treatAsLispNumber (head args) >>= (\a ->
-            guaranteeNotZero ind a >>=
-                const (fromLispNumber ind (LispInteger' 1 / a)))
+            guaranteeNotZero a >>=
+                const (fromLispNumber (LispInteger' 1 / a)))
     | otherwise        =
         mapM treatAsLispNumber args >>= (\nums ->
-            mapM (guaranteeNotZero ind) (tail nums) >>=
-                const (fromLispNumber ind (foldl1 (/) nums)))
+            mapM guaranteeNotZero (tail nums) >>=
+                const (fromLispNumber (foldl1 (/) nums)))
 
 lispLessThan :: Procedure
-lispLessThan ind args
-    | null args        = throwE (TooFewArguments ind "<" 1)
-    | length args == 1 = return (LispBool ind True)
+lispLessThan args
+    | null args        = throwE (TooFewArguments "<" 1)
+    | length args == 1 = return (LispBool True)
     | otherwise        = do
         vars <- mapM treatAsLispNumber args
         let res = foldl
@@ -116,12 +116,12 @@ lispLessThan ind args
                     )
                     True
                     (zip [0..] vars)
-        return (LispBool ind res)
+        return (LispBool res)
 
 lispLessThanOrEq :: Procedure
-lispLessThanOrEq ind args
-    | null args        = throwE (TooFewArguments ind "<=" 1)
-    | length args == 1 = return (LispBool ind True)
+lispLessThanOrEq args
+    | null args        = throwE (TooFewArguments "<=" 1)
+    | length args == 1 = return (LispBool True)
     | otherwise        = do
         vars <- mapM treatAsLispNumber args
         let res = foldl
@@ -133,12 +133,12 @@ lispLessThanOrEq ind args
                     )
                     True
                     (zip [0..] vars)
-        return (LispBool ind res)
+        return (LispBool res)
 
 lispNumberEq :: Procedure
-lispNumberEq ind args
-    | null args        = throwE (TooFewArguments ind "=" 1)
-    | length args == 1 = return (LispBool ind True)
+lispNumberEq args
+    | null args        = throwE (TooFewArguments "=" 1)
+    | length args == 1 = return (LispBool True)
     | otherwise        = do
         vars <- mapM treatAsLispNumber args
         let res = foldl
@@ -150,12 +150,12 @@ lispNumberEq ind args
                     )
                     True
                     (zip [0..] vars)
-        return (LispBool ind res)
+        return (LispBool res)
 
 lispGreaterThan :: Procedure
-lispGreaterThan ind args
-    | null args        = throwE (TooFewArguments ind ">" 1)
-    | length args == 1 = return (LispBool ind True)
+lispGreaterThan args
+    | null args        = throwE (TooFewArguments ">" 1)
+    | length args == 1 = return (LispBool True)
     | otherwise        = do
         vars <- mapM treatAsLispNumber args
         let res = foldl
@@ -167,12 +167,12 @@ lispGreaterThan ind args
                     )
                     True
                     (zip [0..] vars)
-        return (LispBool ind res)
+        return (LispBool res)
 
 lispGreaterThanOrEq :: Procedure
-lispGreaterThanOrEq ind args
-    | null args        = throwE (TooFewArguments ind ">=" 1)
-    | length args == 1 = return (LispBool ind True)
+lispGreaterThanOrEq args
+    | null args        = throwE (TooFewArguments ">=" 1)
+    | length args == 1 = return (LispBool True)
     | otherwise        = do
         vars <- mapM treatAsLispNumber args
         let res = foldl
@@ -184,77 +184,77 @@ lispGreaterThanOrEq ind args
                     )
                     True
                     (zip [0..] vars)
-        return (LispBool ind res)
+        return (LispBool res)
 
 lispABS :: Procedure
-lispABS ind args
-    | length args > 1 = throwE (TooManyArguments ind "ABS" 1)
-    | null args       = throwE (TooFewArguments ind "ABS" 1)
+lispABS args
+    | length args > 1 = throwE (TooManyArguments "ABS" 1)
+    | null args       = throwE (TooFewArguments "ABS" 1)
     | otherwise       =
         treatAsLispNumber (head args) >>=
-            (fromLispNumber ind . abs)
+            (fromLispNumber . abs)
 
 lispCOS :: Procedure
-lispCOS ind args
-    | length args > 1 = throwE (TooManyArguments ind "COS" 1)
-    | null args       = throwE (TooFewArguments ind "COS" 1)
+lispCOS args
+    | length args > 1 = throwE (TooManyArguments "COS" 1)
+    | null args       = throwE (TooFewArguments "COS" 1)
     | otherwise       =
         treatAsLispNumber (head args) >>=
-            (fromLispNumber ind . LispReal' . cos . toReal)
+            (fromLispNumber . LispReal' . cos . toReal)
 
 lispEXPT :: Procedure
-lispEXPT ind args
-    | length args > 2 = throwE (TooManyArguments ind "EXPT" 2)
-    | length args < 2 = throwE (TooFewArguments ind "EXPT" 2)
+lispEXPT args
+    | length args > 2 = throwE (TooManyArguments "EXPT" 2)
+    | length args < 2 = throwE (TooFewArguments "EXPT" 2)
     | otherwise       = do
         base <- treatAsLispNumber (head args)
         pow  <- treatAsLispNumber (args !! 1)
-        fromLispNumber ind (power base pow)
+        fromLispNumber (power base pow)
 
 lispMAX :: Procedure
-lispMAX ind args
-    | null args = throwE (TooFewArguments ind "MAX" 1)
+lispMAX args
+    | null args = throwE (TooFewArguments "MAX" 1)
     | otherwise =
         mapM treatAsLispNumber args >>=
-            (fromLispNumber ind . maximum)
+            (fromLispNumber . maximum)
 
 lispMIN :: Procedure
-lispMIN ind args
-    | null args = throwE (TooFewArguments ind "MIN" 1)
+lispMIN args
+    | null args = throwE (TooFewArguments "MIN" 1)
     | otherwise =
         mapM treatAsLispNumber args >>=
-            (fromLispNumber ind . minimum)
+            (fromLispNumber . minimum)
 
 lispNOT :: Procedure
-lispNOT ind args
-    | length args > 1 = throwE (TooManyArguments ind "NOT" 1)
-    | null args       = throwE (TooFewArguments ind "NOT" 1)
+lispNOT args
+    | length args > 1 = throwE (TooManyArguments "NOT" 1)
+    | null args       = throwE (TooFewArguments "NOT" 1)
     | otherwise       =
-        treatAsLispBool (head args) <&> (LispBool ind . not)
+        treatAsLispBool (head args) <&> (LispBool . not)
 
 lispSIN :: Procedure
-lispSIN ind args
-    | length args > 1 = throwE (TooManyArguments ind "SIN" 1)
-    | null args       = throwE (TooFewArguments ind "SIN" 1)
+lispSIN args
+    | length args > 1 = throwE (TooManyArguments "SIN" 1)
+    | null args       = throwE (TooFewArguments "SIN" 1)
     | otherwise       =
         treatAsLispNumber (head args) >>=
-            (fromLispNumber ind . LispReal' . sin . toReal)
+            (fromLispNumber . LispReal' . sin . toReal)
 
 lispSQRT :: Procedure
-lispSQRT ind args
-    | length args > 1 = throwE (TooManyArguments ind "SQRT" 1)
-    | null args       = throwE (TooFewArguments ind "SQRT" 1)
+lispSQRT args
+    | length args > 1 = throwE (TooManyArguments "SQRT" 1)
+    | null args       = throwE (TooFewArguments "SQRT" 1)
     | otherwise       =
         treatAsLispNumber (head args) >>=
-            (fromLispNumber ind . LispReal' . sqrt . toReal)
+            (fromLispNumber . LispReal' . sqrt . toReal)
 
 lispNUMBERP :: Procedure
-lispNUMBERP ind args
-    | length args > 1 = throwE (TooManyArguments ind "NUMBER?" 1)
-    | null args       = throwE (TooFewArguments ind "NUMBER?" 1)
+lispNUMBERP args
+    | length args > 1 = throwE (TooManyArguments "NUMBER?" 1)
+    | null args       = throwE (TooFewArguments "NUMBER?" 1)
     | otherwise       =
         case head args of
-            (LispReal _ _)      -> return (LispBool ind True)
-            (LispRational _ _ ) -> return (LispBool ind True)
-            (LispInteger _ _)   -> return (LispBool ind True)
-            _                   -> return (LispBool ind False)
+            (LispReal _)      -> return (LispBool True)
+            (LispRational _ ) -> return (LispBool True)
+            (LispInteger _)   -> return (LispBool True)
+            _                 -> return (LispBool False)

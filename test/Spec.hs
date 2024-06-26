@@ -1,3 +1,4 @@
+import LexicalScopeSpec
 import LispMathsSpec
 import LispSyntaxSpec
 import ParserSpec
@@ -28,6 +29,8 @@ main = do
             , TestLabel "Lisp BEGIN Test 1"                   lispBEGINTest1
             , TestLabel "Lisp BEGIN Test 2"                   lispBEGINTest2
             , TestLabel "Lisp BEGIN Test 3"                   lispBEGINTest3
+
+            , TestLabel "Lexical Scope Test 1"                lexicalScopeTest1
 
             , TestLabel "Lisp Multiplication Test 1"          lispMultipleTest1
             , TestLabel "Lisp Multiplication Test 2"          lispMultipleTest2

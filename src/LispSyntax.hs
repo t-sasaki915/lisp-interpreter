@@ -25,77 +25,77 @@ lispPredefSyntaxes =
     , "BEGIN"  ~> LispSyntax lispBEGIN
     ]
 
-makeClosure :: Int -> [String] -> [LispData] -> Execution LispData
-makeClosure ind binds progs = do
+makeClosure :: [String] -> [LispData] -> Execution LispData
+makeClosure binds progs = do
     (_, lexi) <- lift get <&> transformEnv
     let newLexi = lexi ++ map (~> LispVariableBind) binds
-    return (LispClosure ind newLexi progs)
+    return (LispClosure newLexi progs)
 
 lispIF :: Procedure
-lispIF ind args
-    | length args > 3 = throwE (TooManyArguments ind "IF" 3)
-    | length args < 2 = throwE (TooFewArguments ind "IF" 2)
+lispIF args
+    | length args > 3 = throwE (TooManyArguments "IF" 3)
+    | length args < 2 = throwE (TooFewArguments "IF" 2)
     | otherwise       = do
         cond  <- eval (head args) >>= treatAsLispBool
         body1 <- getM args 1
-        body2 <- getOrElseM args 2 (LispBool ind False)
+        body2 <- getOrElseM args 2 (LispBool False)
 
         if cond then eval body1
                 else eval body2
 
 lispQUOTE :: Procedure
-lispQUOTE ind args
-    | length args > 1 = throwE (TooManyArguments ind "QUOTE" 1)
-    | null args       = throwE (TooFewArguments ind "QUOTE" 1)
+lispQUOTE args
+    | length args > 1 = throwE (TooManyArguments "QUOTE" 1)
+    | null args       = throwE (TooFewArguments "QUOTE" 1)
     | otherwise       = getM args 0
 
 lispDEFINE :: Procedure
-lispDEFINE ind args
-    | length args < 2 = throwE (TooFewArguments ind "DEFINE" 2)
+lispDEFINE args
+    | length args < 2 = throwE (TooFewArguments "DEFINE" 2)
     | otherwise       =
         case head args of
-            (LispSymbol _ label) -> do
+            (LispSymbol label) -> do
                 expr <- mapM eval (tail args)
                 _    <- bindEnvDataGlobally label (LispVariable (last expr))
-                return (LispSymbol ind label)
+                return (LispSymbol label)
 
-            (LispList n []) ->
-                throwE (TooFewArguments n "Binding" 1)
+            (LispList []) ->
+                throwE (TooFewArguments "Binding" 1)
 
-            (LispList _ lst) -> do
+            (LispList lst) -> do
                 label    <- treatAsLispSymbol (head lst)
                 bindings <- mapM treatAsLispSymbol (drop 1 lst)
-                closure  <- makeClosure ind bindings (drop 1 args)
+                closure  <- makeClosure bindings (drop 1 args)
                 _        <- bindEnvDataGlobally label (LispVariable closure)
-                return (LispSymbol ind label)
+                return (LispSymbol label)
 
             d ->
-                throwE (incompatibleType d "SYMBOL")
+                throwE (IncompatibleType (dataType d) "SYMBOL")
 
 lispLET :: Procedure
-lispLET ind args
-    | length args < 2 = throwE (TooFewArguments ind "LET" 2)
+lispLET args
+    | length args < 2 = throwE (TooFewArguments "LET" 2)
     | otherwise       = do
         bindList <- treatAsLispList (head args)
         bindings <-
                 mapM
                     (\case
-                        (LispSymbol n label) ->
-                            return (label ~> LispVariable (LispBool n False))
+                        (LispSymbol label) ->
+                            return (label ~> LispVariable (LispBool False))
 
-                        (LispList n lst) | length lst < 2 ->
-                            throwE (TooFewArguments n "Binding" 2)
+                        (LispList lst) | length lst < 2 ->
+                            throwE (TooFewArguments "Binding" 2)
 
-                        (LispList n lst) | length lst > 2 ->
-                            throwE (TooManyArguments n "Binding" 2)
+                        (LispList lst) | length lst > 2 ->
+                            throwE (TooManyArguments "Binding" 2)
 
-                        (LispList _ lst) -> do
+                        (LispList lst) -> do
                             label <- treatAsLispSymbol (head lst)
                             value <- eval (lst !! 1)
                             return (label ~> LispVariable value)
 
                         d ->
-                            throwE (incompatibleType d "SYMBOL")
+                            throwE (IncompatibleType (dataType d) "SYMBOL")
                     )
                     bindList
 
@@ -105,8 +105,8 @@ lispLET ind args
         return (last values)
 
 lispSETQ :: Procedure
-lispSETQ ind args
-    | length args < 2 = throwE (TooFewArguments ind "SET!" 2)
+lispSETQ args
+    | length args < 2 = throwE (TooFewArguments "SET!" 2)
     | otherwise       = do
         (globe, lexi) <- lift get <&> transformEnv
         label <- treatAsLispSymbol (head args)
@@ -121,7 +121,7 @@ lispSETQ ind args
 
                     Just LispVariableBind -> rebind label bindEnvDataGlobally
 
-                    _ -> throwE (UndefinedVariable ind label)
+                    _ -> throwE (UndefinedVariable label)
     where
         rebind label binder = do
             value <- mapM eval (drop 1 args) <&> last
@@ -129,15 +129,15 @@ lispSETQ ind args
             return value
 
 lispLAMBDA :: Procedure
-lispLAMBDA ind args
-    | length args < 2 = throwE (TooFewArguments ind "LAMBDA" 2)
+lispLAMBDA args
+    | length args < 2 = throwE (TooFewArguments "LAMBDA" 2)
     | otherwise       = do
         bindList <- treatAsLispList (head args)
         bindings <- mapM treatAsLispSymbol bindList
 
-        makeClosure ind bindings (drop 1 args)
+        makeClosure bindings (drop 1 args)
 
 lispBEGIN :: Procedure
-lispBEGIN ind args
-    | null args = return (LispBool ind False)
+lispBEGIN args
+    | null args = return (LispBool False)
     | otherwise = mapM eval args <&> last

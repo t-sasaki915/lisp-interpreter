@@ -18,9 +18,9 @@ parserTest1 :: Test
 parserTest1 = parserTest
     "(abc def)"
     ( return
-            [ LispList 8
-                [ LispSymbol 3 "ABC"
-                , LispSymbol 7 "DEF"
+            [ LispList
+                [ LispSymbol "ABC"
+                , LispSymbol "DEF"
                 ]
             ]
     )
@@ -29,17 +29,17 @@ parserTest2 :: Test
 parserTest2 = parserTest
     "(abc def) (1 2 3 4) ()"
     ( return
-        [ LispList 8
-            [ LispSymbol 3 "ABC"
-            , LispSymbol 7 "DEF"
+        [ LispList
+            [ LispSymbol "ABC"
+            , LispSymbol "DEF"
             ]
-        , LispList 18
-            [ LispInteger 11 1
-            , LispInteger 13 2
-            , LispInteger 15 3
-            , LispInteger 17 4
+        , LispList
+            [ LispInteger 1
+            , LispInteger 2
+            , LispInteger 3
+            , LispInteger 4
             ]
-        , LispList 21
+        , LispList
             [
             ]
         ]
@@ -49,16 +49,16 @@ parserTest3 :: Test
 parserTest3 = parserTest
     "(aa 1 2.0 3/4 #\\a #\\Return #t #F \"hello\")"
     ( return
-        [ LispList 40
-            [ LispSymbol 2 "AA"
-            , LispInteger 4 1
-            , LispReal 8 2.0
-            , LispRational 12 (3 % 4)
-            , LispCharacter 16 'a'
-            , LispCharacter 25 '\r'
-            , LispBool 28 True
-            , LispBool 31 False
-            , LispString 39 "hello"
+        [ LispList
+            [ LispSymbol "AA"
+            , LispInteger 1
+            , LispReal 2.0
+            , LispRational (3 % 4)
+            , LispCharacter 'a'
+            , LispCharacter '\r'
+            , LispBool True
+            , LispBool False
+            , LispString "hello"
             ]
         ]
     )
@@ -67,27 +67,27 @@ parserTest4 :: Test
 parserTest4 = parserTest
     "(((1) 2 3) 4 (5) 6 (7 (8)) 9 0)"
     ( return
-        [ LispList 30
-            [ LispList 9
-                [ LispList 4
-                    [ LispInteger 3 1
+        [ LispList
+            [ LispList
+                [ LispList
+                    [ LispInteger 1
                     ]
-                , LispInteger 6 2
-                , LispInteger 8 3
+                , LispInteger 2
+                , LispInteger 3
                 ]
-            , LispInteger 11 4
-            , LispList 15
-                [ LispInteger 14 5
+            , LispInteger 4
+            , LispList
+                [ LispInteger 5
                 ]
-            , LispInteger 17 6
-            , LispList 25
-                [ LispInteger 20 7
-                , LispList 24
-                    [ LispInteger 23 8
+            , LispInteger 6
+            , LispList
+                [ LispInteger 7
+                , LispList
+                    [ LispInteger 8
                     ]
                 ]
-            , LispInteger 27 9
-            , LispInteger 29 0
+            , LispInteger 9
+            , LispInteger 0
             ]
         ]
     )
@@ -104,13 +104,13 @@ parserTest5 = parserTest
         ]
     )
     ( return
-        [ LispList 28
-            [ LispInteger 25 1
-            , LispInteger 27 2
+        [ LispList
+            [ LispInteger 1
+            , LispInteger 2
             ]
-        , LispList 42
-            [ LispInteger 39 3
-            , LispInteger 41 4
+        , LispList
+            [ LispInteger 3
+            , LispInteger 4
             ]
         ]
     )
@@ -119,22 +119,22 @@ parserTest6 :: Test
 parserTest6 = parserTest
     "(aa'aa) ''(a) '('1.0 '2 '16/20)"
     ( return
-        [ LispList 6
-            [ LispSymbol 2 "AA"
-            , LispQuote (LispSymbol 5 "AA")
+        [ LispList
+            [ LispSymbol "AA"
+            , LispQuote (LispSymbol "AA")
             ]
         , LispQuote (
             LispQuote (
-                LispList 12
-                    [ LispSymbol 11 "A"
+                LispList
+                    [ LispSymbol "A"
                     ]
             )
           )
         , LispQuote (
-            LispList 30
-                [ LispQuote (LispReal 19 1.0)
-                , LispQuote (LispInteger 22 2)
-                , LispQuote (LispRational 29 (16 % 20))
+            LispList
+                [ LispQuote (LispReal 1.0)
+                , LispQuote (LispInteger 2)
+                , LispQuote (LispRational (16 % 20))
                 ]
           )
         ]

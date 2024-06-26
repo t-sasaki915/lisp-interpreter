@@ -16,14 +16,14 @@ import Data.Ratio ((%), numerator, denominator)
 
 eval :: LispData -> Execution LispData
 eval = \case
-    (LispSymbol n label) -> do
+    (LispSymbol label) -> do
         (globe, lexi) <- lift get <&> transformEnv
         case lookup label lexi of
             Just (LispVariable d) ->
                 return d
 
             Just LispVariableBind ->
-                throwE (UninitialisedVariable n label)
+                throwE (UninitialisedVariable label)
 
             _ ->
                 case lookup label globe of
@@ -31,82 +31,82 @@ eval = \case
                         return d
 
                     Just LispVariableBind ->
-                        throwE (UninitialisedVariable n label)
+                        throwE (UninitialisedVariable label)
 
                     _ ->
-                        throwE (UndefinedVariable n label)
+                        throwE (UndefinedVariable label)
 
     (LispQuote d) ->
         return d
 
-    (LispInteger n z) ->
-        return (LispInteger n z)
+    (LispInteger z) ->
+        return (LispInteger z)
 
-    (LispReal n r) ->
-        return (LispReal n r)
+    (LispReal r) ->
+        return (LispReal r)
 
-    (LispRational n r) ->
+    (LispRational r) ->
         case (numerator r, denominator r) of
-            (a, 1) -> return (LispInteger n a)
-            (a, b) -> return (LispRational n (a % b))
+            (a, 1) -> return (LispInteger a)
+            (a, b) -> return (LispRational (a % b))
 
-    (LispBool n b) ->
-        return (LispBool n b)
+    (LispBool b) ->
+        return (LispBool b)
 
-    (LispString n s) ->
-        return (LispString n s)
+    (LispString s) ->
+        return (LispString s)
 
-    (LispCharacter n c) ->
-        return (LispCharacter n c)
+    (LispCharacter c) ->
+        return (LispCharacter c)
 
-    (LispPair n p) ->
-        return (LispPair n p)
+    (LispPair p) ->
+        return (LispPair p)
 
-    (LispClosure n b p) ->
-        return (LispClosure n b p)
+    (LispClosure b p) ->
+        return (LispClosure b p)
 
-    (LispList n []) ->
-        return (LispBool n False)
+    (LispList []) ->
+        return (LispBool False)
 
-    (LispList _ lst) ->
+    (LispList lst) ->
         case head lst of
-            (LispSymbol n' label) -> do
+            (LispSymbol label) -> do
                 (globe, _) <- lift get <&> transformEnv
                 case lookup label globe of
                     Just (LispSyntax f) ->
-                        f n' (drop 1 lst)
+                        f (drop 1 lst)
 
                     Just (LispFunction f) -> do
                         args <- mapM eval (drop 1 lst)
-                        f n' args
+                        f args
 
-                    Just (LispVariable (LispClosure _ binds progs)) -> do
+                    Just (LispVariable (LispClosure binds progs)) -> do
                         args    <- mapM eval (drop 1 lst)
-                        newLexi <- attribute n' label binds args
+                        newLexi <- attribute label binds args
                         _       <- lexicalScope newLexi
                         values  <- mapM eval progs
                         _       <- finaliseLexicalScope
                         return (last values)
 
                     Just (LispVariable _) ->
-                        throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))
+                        throwE IllegalFunctionCall
                        
                     Just LispVariableBind ->
-                        throwE (UninitialisedVariable n' label)
+                        throwE (UninitialisedVariable label)
 
                     Nothing ->
-                        throwE (UndefinedFunction n' label)
+                        throwE (UndefinedFunction label)
 
             _ ->
-                throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))
+                throwE IllegalFunctionCall
 
-attribute :: Int -> String -> [(String, LispEnvData)] ->
+attribute :: String -> [(String, LispEnvData)] ->
              [LispData] -> Execution [(String, LispEnvData)]
-attribute ind label lexi args = do
+attribute label lexi args = do
     (lexi', refIndex) <- foldM
         (\(lst, refIndex) -> \case
             (_, LispVariableBind) | refIndex >= length args ->
-                throwE (TooFewArguments ind label refIndex)
+                throwE (TooFewArguments label refIndex)
 
             (lb, LispVariableBind) ->
                 return (lst ++ [lb ~> LispVariable (args !! refIndex)], refIndex + 1)
@@ -119,4 +119,4 @@ attribute ind label lexi args = do
 
     if refIndex == length args
         then return lexi'
-        else throwE (TooManyArguments ind label refIndex)
+        else throwE (TooManyArguments label refIndex)

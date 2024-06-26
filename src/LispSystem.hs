@@ -11,19 +11,19 @@ import Data.Ratio ((%), numerator, denominator)
 
 type Execution a = ExceptT RuntimeError (StateT LispEnv IO) a
 
-type Procedure = Int -> [LispData] -> Execution LispData
+type Procedure = [LispData] -> Execution LispData
 
-data LispData = LispInteger Int Integer
-              | LispReal Int Float
-              | LispRational Int Rational
-              | LispSymbol Int String
-              | LispBool Int Bool
-              | LispString Int String
-              | LispCharacter Int Char
-              | LispList Int [LispData]
-              | LispPair Int (LispData, LispData)
+data LispData = LispInteger Integer
+              | LispReal Float
+              | LispRational Rational
+              | LispSymbol String
+              | LispBool Bool
+              | LispString String
+              | LispCharacter Char
+              | LispList [LispData]
+              | LispPair (LispData, LispData)
               | LispQuote LispData
-              | LispClosure Int [(String, LispEnvData)] [LispData]
+              | LispClosure [(String, LispEnvData)] [LispData]
               deriving Eq
 
 data LispEnvData = LispFunction Procedure
@@ -46,18 +46,18 @@ instance Eq Procedure where
     (==) _ _ = True
 
 instance Show LispData where
-    show (LispInteger _ n)   = show n
-    show (LispReal _ n)      = show n
-    show (LispRational _ a)  = show (numerator a) ++ "/" ++ show (denominator a)
-    show (LispSymbol _ n)    = n
-    show (LispBool _ True)   = "#T"
-    show (LispBool _ False)  = "#F"
-    show (LispString _ s)    = "\"" ++ s ++ "\""
-    show (LispCharacter _ c) = "#\\" ++ [c]
-    show (LispList _ l)      = "(" ++ unwords (map show l) ++ ")"
-    show (LispPair _ p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
-    show (LispQuote d)       = "'" ++ show d
-    show (LispClosure {})    = "CLOSURE"
+    show (LispInteger n)   = show n
+    show (LispReal n)      = show n
+    show (LispRational a)  = show (numerator a) ++ "/" ++ show (denominator a)
+    show (LispSymbol n)    = n
+    show (LispBool True)   = "#T"
+    show (LispBool False)  = "#F"
+    show (LispString s)    = "\"" ++ s ++ "\""
+    show (LispCharacter c) = "#\\" ++ [c]
+    show (LispList l)      = "(" ++ unwords (map show l) ++ ")"
+    show (LispPair p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
+    show (LispQuote d)     = "'" ++ show d
+    show (LispClosure _ _) = "CLOSURE"
 
 instance Eq LispNumber where
     (==) (LispInteger' z1) (LispInteger' z2) =
