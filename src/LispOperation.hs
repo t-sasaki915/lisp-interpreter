@@ -85,8 +85,8 @@ bindEnvDataLexically label envData = do
 
 lexicalScope :: [(String, LispEnvData)] -> Execution ()
 lexicalScope binds = do
-    (globe, lexi) <- lift get <&> transformEnv
-    _             <- lift $ put (LispEnv globe (lexi ++ binds))
+    (globe, _) <- lift get <&> transformEnv
+    _          <- lift $ put (LispEnv globe binds)
     return ()
 
 finaliseLexicalScope :: Execution ()
