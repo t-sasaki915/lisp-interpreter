@@ -81,13 +81,13 @@ eval = \case
                         args <- mapM eval (drop 1 lst)
                         f n' args
 
-                    Just (_, LispVariable (LispClosure _ binds prog)) -> do
-                        args       <- mapM eval (drop 1 lst)
-                        newLexi    <- attribute n' label binds args
-                        _          <- lift $ put (LispEnv globe newLexi)
-                        value      <- eval prog
-                        _          <- restoreEnv
-                        return value
+                    Just (_, LispVariable (LispClosure _ binds progs)) -> do
+                        args    <- mapM eval (drop 1 lst)
+                        newLexi <- attribute n' label binds args
+                        _       <- lift $ put (LispEnv globe newLexi)
+                        values  <- mapM eval progs
+                        _       <- restoreEnv
+                        return (last values)
 
                     Just (_, LispVariable _) ->
                         throwE (IllegalFunctionCall ((fst . indexAndType) (head lst)))

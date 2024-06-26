@@ -23,7 +23,7 @@ data LispData = LispInteger Int Integer
               | LispList Int [LispData]
               | LispPair Int (LispData, LispData)
               | LispQuote LispData
-              | LispClosure Int [(String, LispEnvData)] LispData
+              | LispClosure Int [(String, LispEnvData)] [LispData]
               deriving Eq
 
 data LispEnvData = LispFunction Procedure

@@ -21,6 +21,12 @@ lispPredefSyntaxes =
     , "LAMBDA" ~> LispSyntax lispLAMBDA
     ]
 
+makeClosure :: Int -> [String] -> [LispData] -> Execution LispData
+makeClosure ind binds progs = do
+    (_, lexi) <- lift get <&> transformEnv
+    let newLexi = lexi ++ map (~> LispVariableBind) binds
+    return (LispClosure ind newLexi progs)
+
 lispIF :: Procedure
 lispIF ind args
     | length args > 3 = throwE (TooManyArguments ind "IF" 3)
@@ -48,6 +54,16 @@ lispDEFINE ind args
                 expr <- mapM eval (tail args)
                 _    <- bindEnvDataGlobally label (LispVariable (last expr))
                 return (LispSymbol ind label)
+            
+            (LispList n []) ->
+                throwE (TooFewArguments n "Binding" 1)
+
+            (LispList _ lst) -> do
+                label    <- treatAsLispSymbol (head lst)
+                bindings <- mapM treatAsLispSymbol (drop 1 lst)
+                closure  <- makeClosure ind bindings (drop 1 args)
+                _        <- bindEnvDataGlobally label (LispVariable closure)
+                return (LispSymbol ind label)
 
             d ->
                 throwE (incompatibleType d "SYMBOL")
@@ -56,9 +72,7 @@ lispLAMBDA :: Procedure
 lispLAMBDA ind args
     | length args < 2 = throwE (TooFewArguments ind "LAMBDA" 2)
     | otherwise       = do
-        (_, lexi) <- lift get <&> transformEnv
-        bindList  <- treatAsLispList (head args)
-        bindings  <- mapM treatAsLispSymbol bindList
-        let newLexi = lexi ++ map (~> LispVariableBind) bindings
+        bindList <- treatAsLispList (head args)
+        bindings <- mapM treatAsLispSymbol bindList
 
-        return (LispClosure ind newLexi (args !! 1))
+        makeClosure ind bindings (drop 1 args)
