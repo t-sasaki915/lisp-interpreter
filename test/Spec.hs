@@ -33,6 +33,8 @@ main = do
             , TestLabel "Lexical Scope Test 1"                lexicalScopeTest1
             , TestLabel "Lexical Scope Test 2"                lexicalScopeTest2
             , TestLabel "Lexical Scope Test 3"                lexicalScopeTest3
+            , TestLabel "Lexical Scope Test 4"                lexicalScopeTest4
+            , TestLabel "Lexical Scope Test 5"                lexicalScopeTest5
 
             , TestLabel "Lisp Multiplication Test 1"          lispMultipleTest1
             , TestLabel "Lisp Multiplication Test 2"          lispMultipleTest2

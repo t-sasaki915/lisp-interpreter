@@ -28,6 +28,11 @@ lexicalScopeTest src e =
         Left err ->
             TestCase $ assertEqual "" err ""
 
+{-
+  The reference of test codes is
+  https://ja.wikipedia.org/wiki/%E9%9D%99%E7%9A%84%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97
+-}
+
 lexicalScopeTest1 :: Test
 lexicalScopeTest1 = lexicalScopeTest
     (unlines
@@ -55,6 +60,25 @@ lexicalScopeTest3 = lexicalScopeTest
         , "(set! *a* 5)"
         , "(let ((*a* 3)) *a*)"
         , "*a*"
+        ]
+    )
+    (LispInteger 5)
+
+lexicalScopeTest4 :: Test
+lexicalScopeTest4 = lexicalScopeTest
+    (unlines
+        [ "(define func-lex (let ((a 3)) (lambda () a)))"
+        , "(let ((a 5)) (func-lex))"
+        ]
+    )
+    (LispInteger 3)
+
+lexicalScopeTest5 :: Test
+lexicalScopeTest5 = lexicalScopeTest
+    (unlines
+        [ "(define *a* 5)"
+        , "(define func-dyn (let ((*a* 3)) (lambda () *a*)))"
+        , "(func-dyn)"
         ]
     )
     (LispInteger 5)
