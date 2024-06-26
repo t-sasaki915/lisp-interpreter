@@ -6,147 +6,135 @@ import LispError (ParseError(..))
 import Control.Monad.Trans.Except (Except, throwE)
 import Data.Char (toUpper)
 import Data.Functor ((<&>))
-import Data.List (find)
 import Data.Ratio ((%))
 import Text.Read (readMaybe)
 import Text.Regex.Posix ((=~))
 
 data Status = Start Int
-            | ReadingSymb Int String
+            | CollectingElems Int [LispData]
             | ReadingStr Int String
-            | Ignoring
+            | ReadingSymb Int String
+            | Ignoring Status
 
 parse :: String -> Except ParseError [LispData]
-parse src = parse' src 0 [] (Start 0) <&> snd
+parse src = recursive 0 []
+    where
+        recursive :: Int -> [LispData] -> Except ParseError [LispData]
+        recursive i lds | i + 1 >= length src = return lds
+        recursive i lds = do
+            (i', ld) <- parse' src i (Start 0)
+            recursive (i' + 1) (lds ++ [ld])
 
-parse' :: String -> Int -> [LispData] -> Status ->
-          Except ParseError (Int, [LispData])
-parse' str i parsed status | i >= length str =
+parse' :: String -> Int -> Status -> Except ParseError (Int, LispData)
+parse' src i status | i >= length src =
     case status of
-        (Start 0) ->
-            return (i - 1, reverse parsed)
+        (ReadingSymb nestDep buffer) -> do
+            symb <- finaliseRead (i - 1) buffer <&> mkQuoteNest nestDep
+            return (i - 1, symb)
+
         _ ->
             throwE UnexpectedEOF
 
-parse' str i parsed (Start nestDep) =
-    case str !! i of
-        '(' -> do
-            (i', lst) <- parse' str (i + 1) [] (Start 0)
-            let newd = mkQuoteNest nestDep (LispList i' lst)
-            parse' str (i' + 1) (newd : parsed) (Start 0)
-
-        ')' ->
-            return (i, reverse parsed)
-
-        ';' ->
-            parse' str (i + 1) parsed Ignoring
-
-        '"' ->
-            parse' str (i + 1) parsed (ReadingStr nestDep "")
+parse' src i (Start nestDep) =
+    case src !! i of
+        '(' ->
+            parse' src (i + 1) (CollectingElems nestDep [])
 
         '\'' ->
-            parse' str (i + 1) parsed (Start (nestDep + 1))
+            parse' src (i + 1) (Start (nestDep + 1))
+
+        '"' ->
+            parse' src (i + 1) (ReadingStr nestDep "")
+
+        ';' ->
+            parse' src (i + 1) (Ignoring (Start nestDep))
 
         c | c `elem` [' ', '\t', '\n'] ->
-            parse' str (i + 1) parsed (Start nestDep)
+            parse' src (i + 1) (Start nestDep)
 
+        ')' ->
+            throwE (UnexpectedToken i ')')
+        
         c ->
-            parse' str (i + 1) parsed (ReadingSymb nestDep [c])
+            parse' src (i + 1) (ReadingSymb nestDep [c])
 
-parse' str i parsed (ReadingSymb nestDep buf) =
-    case str !! i of
-        '(' -> do
-            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
-            (i', lst) <- parse' str (i + 1) [] (Start 0)
-            parse' str (i' + 1) (LispList i' lst : symb : parsed) (Start 0)
+parse' src i (CollectingElems nestDep lst) =
+    case src !! i of
+        ')' ->
+            return (i, mkQuoteNest nestDep (LispList i lst))
 
-        ')' -> do
-            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
-            return (i, reverse $ symb : parsed)
+        _ -> do
+            (i', dat) <- parse' src i (Start 0)
+            parse' src (i' + 1) (CollectingElems nestDep (lst ++ [dat]))
 
-        ';' -> do
-            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
-            parse' str (i + 1) (symb : parsed) Ignoring
-
-        '\'' -> do
-            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
-            parse' str (i + 1) (symb : parsed) (Start 1)
-
-        c | c `elem` [' ', '\t', '\n'] -> do
-            symb <- finaliseRead (i - 1) buf <&> mkQuoteNest nestDep
-            parse' str (i + 1) (symb : parsed) (Start 0)
-
-        c ->
-            parse' str (i + 1) parsed (ReadingSymb nestDep (buf ++ [c]))
-
-parse' str i parsed (ReadingStr nestDep buf) =
-    case str !! i of
+parse' src i (ReadingStr nestDep buffer) =
+    case src !! i of
         '"' ->
-            let lstr = mkQuoteNest nestDep (LispString i buf) in
-            parse' str (i + 1) (lstr : parsed) (Start 0)
+            return (i, mkQuoteNest nestDep (LispString i buffer))
 
         c ->
-            parse' str (i + 1) parsed (ReadingStr nestDep (buf ++ [c]))
+            parse' src (i + 1) (ReadingStr nestDep (buffer ++ [c]))
 
-parse' str i parsed Ignoring =
-    case str !! i of
+parse' src i (ReadingSymb nestDep buffer) =
+    case src !! i of
+        c | c `elem` ['(', ')', '\'', '"', ';', ' ', '\t', '\n'] -> do
+            symb <- finaliseRead (i - 1) buffer <&> mkQuoteNest nestDep
+            return (i - 1, symb)
+
+        c ->
+            parse' src (i + 1) (ReadingSymb nestDep (buffer ++ [c]))
+
+parse' src i (Ignoring restart) =
+    case src !! i of
         '\n' ->
-            parse' str (i + 1) parsed (Start 0)
+            parse' src (i + 1) restart
 
         _ ->
-            parse' str (i + 1) parsed Ignoring
+            parse' src (i + 1) (Ignoring restart)
 
 mkQuoteNest :: Int -> LispData -> LispData
 mkQuoteNest 0 d = d
 mkQuoteNest n d = mkQuoteNest (n - 1) (LispQuote d)
 
 finaliseRead :: Int -> String -> Except ParseError LispData
-finaliseRead n buf =
-    let buf' = map toUpper buf in
-    case readMaybe buf :: Maybe Integer of
-        Just z -> return $ LispInteger n z
+finaliseRead n ('#' : '\\' : [x]) =
+    return (LispCharacter n x)
+
+finaliseRead n ('#' : '\\' : xs)  =
+    case xs of
+        "Backspace" -> return (LispCharacter n '\b')
+        "Tab"       -> return (LispCharacter n '\t')
+        "Page"      -> return (LispCharacter n '\f')
+        "Linefeed"  -> return (LispCharacter n '\n')
+        "Return"    -> return (LispCharacter n '\r')
+        _           -> throwE (UnknownChar n xs)
+
+finaliseRead n buffer =
+    case readMaybe buffer :: Maybe Integer of
+        Just z ->
+            return (LispInteger n z)
+
         Nothing ->
-            case readMaybe buf :: Maybe Float of
-                Just f -> return $ LispReal n f
+            case readMaybe buffer :: Maybe Float of
+                Just f ->
+                    return (LispReal n f)
+    
                 Nothing ->
-                    case buf of
+                    let upperCase = map toUpper buffer in
+                    case upperCase of
                         "#T" ->
-                            return $ LispBool n True
-                        "#t" ->
-                            return $ LispBool n True
+                            return (LispBool n True)
                         "#F" ->
-                            return $ LispBool n False
-                        "#f" ->
-                            return $ LispBool n False
-                        ('#' : '\\' : [x]) ->
-                            return $ LispCharacter n x
-                        ('#' : '\\' : xs) ->
-                            analyseChar n (map toUpper xs)
-                        _ | buf =~ "[0-9]+\\/[0-9]+" == buf ->
-                            case mapT read (break' (== '/') buf) of
-                                (_, 0) -> throwE $ ZeroDivideCalculation' n
-                                (a, 1) -> return $ LispInteger n a
-                                (a, b) -> return $ LispRational n (a % b)
+                            return (LispBool n False)
+
+                        _ | upperCase =~ "[0-9]+\\/[0-9]+" == upperCase ->
+                            case mapT read (break' (== '/') upperCase) of
+                                (_, 0) -> throwE (ZeroDivideCalculation' n)
+                                (a, 1) -> return (LispInteger n a)
+                                (a, b) -> return (LispRational n (a % b))
+
                         _ ->
-                            return $ LispSymbol n buf'
+                            return (LispSymbol n upperCase)
     where
         mapT f (a, b) = (f a, f b)
         break' f xs = let (a, b) = break f xs in (a, tail b)
-
-analyseChar :: Int -> String -> Except ParseError LispData
-analyseChar n str =
-    case find (\(l, _) -> str == l) specialChars of
-        Just (_, c) ->
-            return (LispCharacter n c)
-
-        Nothing ->
-            throwE (UnknownChar n str)
-
-specialChars :: [(String, Char)]
-specialChars =
-    [ ("BACKSPACE", '\b')
-    , ("TAB"      , '\t')
-    , ("PAGE"     , '\f')
-    , ("LINEFEED" , '\n')
-    , ("RETURN"   , '\r')
-    ]

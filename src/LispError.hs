@@ -11,20 +11,24 @@ class LispError a where
 
 data ParseError = UnexpectedEOF
                 | UnknownChar Int String
+                | UnexpectedToken Int Char
                 | ZeroDivideCalculation' Int
                 deriving (Eq, Show)
 
 instance LispError ParseError where
     index UnexpectedEOF               = 0
     index (UnknownChar n _)           = n
+    index (UnexpectedToken n _)       = n
     index (ZeroDivideCalculation' n)  = n
 
     title UnexpectedEOF               = "Unexpected end of file"
     title (UnknownChar {})            = "Unknown character"
+    title (UnexpectedToken {})        = "Unexpected token"
     title (ZeroDivideCalculation' {}) = "Zero divide calculation"
 
     cause UnexpectedEOF               = ""
     cause (UnknownChar _ a)           = a
+    cause (UnexpectedToken _ a)       = [a]
     cause (ZeroDivideCalculation' _)  = ""
 
 data RuntimeError = UndefinedVariable Int String
