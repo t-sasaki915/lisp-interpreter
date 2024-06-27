@@ -1,122 +1,77 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Eval (eval) where
+module Eval (eval, evalClosure) where
 
 import LispError (RuntimeError(..))
 import LispOperation
 import LispSystem
 import Util ((~>))
 
-import Control.Monad (foldM)
-import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (throwE)
-import Control.Monad.Trans.State.Strict (get)
 import Data.Functor ((<&>))
 import Data.Ratio ((%), numerator, denominator)
 
 eval :: LispData -> Execution LispData
 eval = \case
     (LispSymbol label) -> do
-        (globe, lexi) <- lift get <&> transformEnv
-        case lookup label lexi of
-            Just (LispVariable d) ->
-                return d
-
-            Just LispVariableBind ->
-                throwE (UninitialisedVariable label)
-
-            _ ->
-                case lookup label globe of
-                    Just (LispVariable d) ->
-                        return d
-
-                    Just LispVariableBind ->
-                        throwE (UninitialisedVariable label)
-
-                    _ ->
-                        throwE (UndefinedVariable label)
+        maybeLexicalVar <- lookupLexicalVariable label
+        case maybeLexicalVar of
+            Just (Just d) -> return d
+            Just Nothing  -> throwE (UninitialisedVariable label) 
+            Nothing -> do
+                maybeGlobalVar <- lookupGlobalVariable label
+                case maybeGlobalVar of
+                    Just (Just d) -> return d
+                    Just Nothing  -> throwE (UninitialisedVariable label)
+                    _             -> throwE (UndefinedVariable label)
 
     (LispQuote d) ->
         return d
-
-    (LispInteger z) ->
-        return (LispInteger z)
-
-    (LispReal r) ->
-        return (LispReal r)
 
     (LispRational r) ->
         case (numerator r, denominator r) of
             (a, 1) -> return (LispInteger a)
             (a, b) -> return (LispRational (a % b))
 
-    (LispBool b) ->
-        return (LispBool b)
-
-    (LispString s) ->
-        return (LispString s)
-
-    (LispCharacter c) ->
-        return (LispCharacter c)
-
-    (LispPair p) ->
-        return (LispPair p)
-
-    (LispClosure b p) ->
-        return (LispClosure b p)
-
     (LispList []) ->
         return (LispBool False)
 
-    (LispList lst) ->
-        case head lst of
-            (LispSymbol label) -> do
-                (globe, _) <- lift get <&> transformEnv
-                case lookup label globe of
-                    Just (LispSyntax f) ->
-                        f (drop 1 lst)
+    (LispList lst) -> case head lst of
+        (LispSymbol label) -> do
+            maybeFunc <- lookupFunction label
+            case maybeFunc of
+                Just (LispFunction f) -> do
+                    args <- mapM eval (drop 1 lst)
+                    f args
 
-                    Just (LispFunction f) -> do
-                        args <- mapM eval (drop 1 lst)
-                        f args
+                Just (LispSyntax f) ->
+                    f (drop 1 lst)
 
-                    Just (LispVariable (LispClosure binds progs)) -> do
-                        args    <- mapM eval (drop 1 lst)
-                        newLexi <- attribute label binds args
-                        _       <- lexicalScope newLexi
-                        values  <- mapM eval progs
-                        _       <- finaliseLexicalScope
-                        return (last values)
+                Just (LispUserFunction (LispClosure binds labels progs)) ->
+                    evalClosure label (LispClosure binds labels progs) (drop 1 lst)
 
-                    Just (LispVariable _) ->
-                        throwE IllegalFunctionCall
-                       
-                    Just LispVariableBind ->
-                        throwE (UninitialisedVariable label)
+                _ ->
+                    throwE (UndefinedFunction label)
+        _ ->
+            throwE IllegalFunctionCall
 
-                    Nothing ->
-                        throwE (UndefinedFunction label)
+    d ->
+        return d
 
-            _ ->
-                throwE IllegalFunctionCall
-
-attribute :: String -> [(String, LispEnvData)] ->
-             [LispData] -> Execution [(String, LispEnvData)]
-attribute label lexi args = do
-    (lexi', refIndex) <- foldM
-        (\(lst, refIndex) -> \case
-            (_, LispVariableBind) | refIndex >= length args ->
-                throwE (TooFewArguments label refIndex)
-
-            (lb, LispVariableBind) ->
-                return (lst ++ [lb ~> LispVariable (args !! refIndex)], refIndex + 1)
-
-            (lb, d) ->
-                return (lst ++ [lb ~> d], refIndex)
-        )
-        ([], 0)
-        lexi
-
-    if refIndex == length args
-        then return lexi'
-        else throwE (TooManyArguments label refIndex)
+evalClosure :: String -> LispData -> [LispData] -> Execution LispData
+evalClosure label (LispClosure binds labels progs) args = do
+    binds' <- attribute
+    _      <- lexicalScope binds'
+    value  <- mapM eval progs <&> last
+    _      <- finaliseLexicalScope
+    return value
+    where
+        attribute
+            | length args > length labels = throwE (TooManyArguments label (length labels))
+            | length args < length labels = throwE (TooFewArguments label (length labels))
+            | otherwise = do
+                args' <- mapM eval args
+                return $ fst $
+                    foldl (\(lst, ref) lb -> (lst ++ [lb ~> Just (args' !! ref)], ref + 1))
+                        (binds, 0) labels
+evalClosure _ d _ = throwE (IncompatibleType (dataType d) "CLOSURE")

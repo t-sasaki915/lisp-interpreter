@@ -3,7 +3,7 @@
 
 module LispSyntax where
 
-import Eval (eval)
+import Eval (eval, evalClosure)
 import LispError (RuntimeError(..))
 import LispOperation
 import LispSystem
@@ -25,15 +25,15 @@ lispPredefSyntaxes =
     , "SETQ"         ~> LispSyntax lispSETQ
     , "LAMBDA"       ~> LispSyntax lispLAMBDA
     , "PROGN"        ~> LispSyntax lispPROGN
+    , "FUNCALL"      ~> LispSyntax lispFUNCALL
     ]
 
 makeClosure :: [String] -> [LispData] -> Execution LispData
 makeClosure binds progs = do
-    (globe, _) <- lift get <&> transformEnv
-    mapM_ (unbindEnvDataLexically . fst) globe
-    (_, lexi)  <- lift get <&> transformEnv
-    let newLexi = lexi ++ map (~> LispVariableBind) binds
-    return (LispClosure newLexi progs)
+    globalVars  <- lift get <&> globalVariables
+    mapM_ (unbindLexicalVariable . fst) globalVars
+    lexicalVars <- lift get <&> lexicalVariables
+    return (LispClosure lexicalVars binds progs)
 
 lispIF :: Procedure
 lispIF args
@@ -61,21 +61,27 @@ lispDEFUN args
         bindList <- treatAsLispList (args !! 1)
         bindings <- mapM treatAsLispSymbol bindList
         closure  <- makeClosure bindings (drop 2 args)
-        _        <- bindEnvDataGlobally label (LispVariable closure)
+        _        <- bindFunction label (LispUserFunction closure)
         return (LispSymbol label)
 
 lispDEFVAR :: Procedure
 lispDEFVAR args
     | null args        = throwE (TooFewArguments "DEFVAR" 1)
-    | length args == 1 = do
-        label <- treatAsLispSymbol (head args)
-        _     <- bindEnvDataGlobally label LispVariableBind
-        return (LispSymbol label)
     | otherwise        = do
-        label <- treatAsLispSymbol (head args)
-        value <- mapM eval (drop 1 args) <&> last
-        _     <- bindEnvDataGlobally label (LispVariable value)
-        return (LispSymbol label)
+        label    <- treatAsLispSymbol (head args)
+        maybeVar <- lookupGlobalVariable label
+        case maybeVar of
+            Just (Just _) ->
+                return (LispSymbol label)
+
+            _ | length args == 1 -> do
+                _ <- bindGlobalVariable label Nothing
+                return (LispSymbol label)
+    
+            _ -> do
+                value <- mapM eval (drop 1 args) <&> last
+                _     <- bindGlobalVariable label (Just value)
+                return (LispSymbol label)
 
 lispDEFPARAMETER :: Procedure
 lispDEFPARAMETER args
@@ -83,7 +89,7 @@ lispDEFPARAMETER args
     | otherwise       = do
         label <- treatAsLispSymbol (head args)
         value <- mapM eval (drop 1 args) <&> last
-        _     <- bindEnvDataGlobally label (LispVariable value)
+        _     <- bindGlobalVariable label (Just value)
         return (LispSymbol label)
 
 lispLET :: Procedure
@@ -95,7 +101,7 @@ lispLET args
                 mapM
                     (\case
                         (LispSymbol label) ->
-                            return (label ~> LispVariable (LispBool False))
+                            return (label ~> Just (LispBool False))
 
                         (LispList lst) | length lst < 2 ->
                             throwE (TooFewArguments "Binding" 2)
@@ -106,41 +112,40 @@ lispLET args
                         (LispList lst) -> do
                             label <- treatAsLispSymbol (head lst)
                             value <- eval (lst !! 1)
-                            return (label ~> LispVariable value)
+                            return (label ~> Just value)
 
                         d ->
                             throwE (IncompatibleType (dataType d) "SYMBOL")
                     )
                     bindList
 
-        _      <- lexicalScope bindings
-        values <- mapM eval (drop 1 args)
-        _      <- finaliseLexicalScope
-        return (last values)
+        _     <- lexicalScope bindings
+        value <- mapM eval (drop 1 args) <&> last
+        _     <- finaliseLexicalScope
+        return value
 
 lispSETQ :: Procedure
 lispSETQ args
     | length args < 2 = throwE (TooFewArguments "SETQ" 2)
     | otherwise       = do
-        (globe, lexi) <- lift get <&> transformEnv
-        label <- treatAsLispSymbol (head args)
-        case lookup label lexi of
-            Just (LispVariable _) -> rebind label bindEnvDataLexically
+        label           <- treatAsLispSymbol (head args)
+        maybeLexicalVar <- lookupLexicalVariable label
+        case maybeLexicalVar of
+            Just _ -> do
+                value <- mapM eval (drop 1 args) <&> last
+                _     <- bindLexicalVariable label (Just value)
+                return value
 
-            Just LispVariableBind -> rebind label bindEnvDataLexically
+            Nothing -> do
+                maybeGlobalVar <- lookupGlobalVariable label
+                case maybeGlobalVar of
+                    Just _ -> do
+                        value <- mapM eval (drop 1 args) <&> last
+                        _     <- bindGlobalVariable label (Just value)
+                        return value
 
-            _ ->
-                case lookup label globe of
-                    Just (LispVariable _) -> rebind label bindEnvDataGlobally
-
-                    Just LispVariableBind -> rebind label bindEnvDataGlobally
-
-                    _ -> throwE (UndefinedVariable label)
-    where
-        rebind label binder = do
-            value <- mapM eval (drop 1 args) <&> last
-            _     <- binder label (LispVariable value)
-            return value
+                    Nothing ->
+                        throwE (UndefinedVariable label)
 
 lispLAMBDA :: Procedure
 lispLAMBDA args
@@ -155,3 +160,17 @@ lispPROGN :: Procedure
 lispPROGN args
     | null args = return (LispBool False)
     | otherwise = mapM eval args <&> last
+
+lispFUNCALL :: Procedure
+lispFUNCALL args
+    | null args = throwE (TooFewArguments "FUNCALL" 1)
+    | otherwise = case head args of
+        (LispClosure binds labels progs) ->
+            evalClosure "This function" (LispClosure binds labels progs) (drop 1 args)
+
+        (LispSymbol label) -> do
+            closure <- eval (LispSymbol label)
+            evalClosure label closure (drop 1 args)
+
+        d ->
+            throwE (IncompatibleType (dataType d) "FUNCTION")

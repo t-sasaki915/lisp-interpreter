@@ -67,7 +67,7 @@ lexicalScopeTest4 :: Test
 lexicalScopeTest4 = lexicalScopeTest
     (unlines
         [ "(defvar func-lex (let ((a 3)) (lambda () a)))"
-        , "(let ((a 5)) (func-lex))"
+        , "(let ((a 5)) (funcall func-lex))"
         ]
     )
     (LispInteger 3)
@@ -77,7 +77,7 @@ lexicalScopeTest5 = lexicalScopeTest
     (unlines
         [ "(defvar *a* 5)"
         , "(defvar func-dyn (let ((*a* 3)) (lambda () *a*)))"
-        , "(func-dyn)"
+        , "(funcall func-dyn)"
         ]
     )
     (LispInteger 5)

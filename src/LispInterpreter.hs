@@ -9,9 +9,9 @@ import LispSystem
 import Data.Functor ((<&>))
 
 initEnv :: LispEnv
-initEnv = LispEnv initGlobe []
+initEnv = LispEnv predefFunctions [] []
     where
-        initGlobe =
+        predefFunctions =
             lispPredefSyntaxes ++
             lispPredefMathsFunctions ++
             lispPredefIOFunctions

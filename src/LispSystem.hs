@@ -23,18 +23,18 @@ data LispData = LispInteger Integer
               | LispList [LispData]
               | LispPair (LispData, LispData)
               | LispQuote LispData
-              | LispClosure [(String, LispEnvData)] [LispData]
+              | LispClosure [(String, Maybe LispData)] [String] [LispData]
               deriving Eq
 
 data LispEnvData = LispFunction Procedure
                  | LispSyntax Procedure
-                 | LispVariable LispData
-                 | LispVariableBind
+                 | LispUserFunction LispData
                  deriving Eq
 
 data LispEnv = LispEnv
-    { global  :: [(String, LispEnvData)]
-    , lexical :: [(String, LispEnvData)]
+    { functions        :: [(String, LispEnvData)]
+    , globalVariables  :: [(String, Maybe LispData)]
+    , lexicalVariables :: [(String, Maybe LispData)]
     }
     deriving Eq
 
@@ -57,7 +57,7 @@ instance Show LispData where
     show (LispList l)      = "(" ++ unwords (map show l) ++ ")"
     show (LispPair p)      = "(" ++ show (fst p) ++ " . " ++ show (snd p) ++ ")"
     show (LispQuote d)     = "'" ++ show d
-    show (LispClosure _ _) = "CLOSURE"
+    show (LispClosure {})  = "CLOSURE"
 
 instance Eq LispNumber where
     (==) (LispInteger' z1) (LispInteger' z2) =

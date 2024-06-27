@@ -25,7 +25,7 @@ dataType = \case
     (LispList _)      -> "LIST"
     (LispPair _)      -> "PAIR"
     (LispQuote d)     -> dataType d
-    (LispClosure _ _) -> "CLOSURE"
+    (LispClosure {})  -> "CLOSURE"
 
 toReal :: LispNumber -> Float
 toReal (LispInteger' n)  = fromIntegral n
@@ -58,39 +58,71 @@ treatAsLispList :: LispData -> Execution [LispData]
 treatAsLispList (LispList l) = return l
 treatAsLispList d = throwE (IncompatibleType (dataType d) "LIST")
 
-transformEnv :: LispEnv -> ([(String, LispEnvData)], [(String, LispEnvData)])
-transformEnv env = (global env, lexical env)
+updateFunctionBinds :: [(String, LispEnvData)] -> Execution ()
+updateFunctionBinds funcs = do
+    env <- lift get
+    lift $ put (LispEnv funcs (globalVariables env) (lexicalVariables env))
 
-unbindEnvDataGlobally :: String -> Execution ()
-unbindEnvDataGlobally label = do
-    (globe, lexi) <- lift get <&> transformEnv
-    lift $ put (LispEnv (filter (\(l, _) -> l /= label) globe) lexi)
+updateGlobalVarBinds :: [(String, Maybe LispData)] -> Execution ()
+updateGlobalVarBinds vars = do
+    env <- lift get
+    lift $ put (LispEnv (functions env) vars (lexicalVariables env))
 
-bindEnvDataGlobally :: String -> LispEnvData -> Execution ()
-bindEnvDataGlobally label envData = do
-    _             <- unbindEnvDataGlobally label
-    (globe, lexi) <- lift get <&> transformEnv
-    lift $ put (LispEnv (globe ++ [label ~> envData]) lexi)
+updateLexicalVarBinds :: [(String, Maybe LispData)] -> Execution ()
+updateLexicalVarBinds vars = do
+    env <- lift get
+    lift $ put (LispEnv (functions env) (globalVariables env) vars)
 
-unbindEnvDataLexically :: String -> Execution ()
-unbindEnvDataLexically label = do
-    (globe, lexi) <- lift get <&> transformEnv
-    lift $ put (LispEnv globe (filter (\(l, _) -> l /= label) lexi))
+unbindFunction :: String -> Execution ()
+unbindFunction label = do
+    funcs <- lift get <&> functions
+    updateFunctionBinds (filter (\(l, _) -> l /= label) funcs)
 
-bindEnvDataLexically :: String -> LispEnvData -> Execution ()
-bindEnvDataLexically label envData = do
-    _             <- unbindEnvDataLexically label
-    (globe, lexi) <- lift get <&> transformEnv
-    lift $ put (LispEnv globe (lexi ++ [label ~> envData]))
+bindFunction :: String -> LispEnvData -> Execution ()
+bindFunction label func = do
+    _     <- unbindFunction label
+    funcs <- lift get <&> functions
+    updateFunctionBinds (funcs ++ [label ~> func])
 
-lexicalScope :: [(String, LispEnvData)] -> Execution ()
-lexicalScope binds = do
-    (globe, _) <- lift get <&> transformEnv
-    _          <- lift $ put (LispEnv globe binds)
-    return ()
+unbindGlobalVariable :: String -> Execution ()
+unbindGlobalVariable label = do
+    vars <- lift get <&> globalVariables
+    updateGlobalVarBinds (filter (\(l, _) -> l /= label) vars)
+
+bindGlobalVariable :: String -> Maybe LispData -> Execution ()
+bindGlobalVariable label var = do
+    _    <- unbindGlobalVariable label
+    vars <- lift get <&> globalVariables
+    updateGlobalVarBinds (vars ++ [label ~> var])
+
+unbindLexicalVariable :: String -> Execution ()
+unbindLexicalVariable label = do
+    vars <- lift get <&> lexicalVariables
+    updateLexicalVarBinds (filter (\(l, _) -> l /= label) vars)
+
+bindLexicalVariable :: String -> Maybe LispData -> Execution ()
+bindLexicalVariable label var = do
+    _    <- unbindLexicalVariable label
+    vars <- lift get <&> lexicalVariables
+    updateLexicalVarBinds (vars ++ [label ~> var])
+
+lookupFunction :: String -> Execution (Maybe LispEnvData)
+lookupFunction label = do
+    funcs <- lift get <&> functions
+    return (lookup label funcs)
+
+lookupGlobalVariable :: String -> Execution (Maybe (Maybe LispData))
+lookupGlobalVariable label = do
+    vars <- lift get <&> globalVariables
+    return (lookup label vars)
+
+lookupLexicalVariable :: String -> Execution (Maybe (Maybe LispData))
+lookupLexicalVariable label = do
+    vars <- lift get <&> lexicalVariables
+    return (lookup label vars)
+
+lexicalScope :: [(String, Maybe LispData)] -> Execution ()
+lexicalScope = updateLexicalVarBinds
 
 finaliseLexicalScope :: Execution ()
-finaliseLexicalScope = do
-    (globe, _) <- lift get <&> transformEnv
-    _          <- lift $ put (LispEnv globe [])
-    return ()
+finaliseLexicalScope = updateLexicalVarBinds []
