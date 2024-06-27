@@ -32,7 +32,7 @@ lispPredefMathsFunctions =
     , "NOT"     ~> LispFunction lispNOT
     , "SIN"     ~> LispFunction lispSIN
     , "SQRT"    ~> LispFunction lispSQRT
-    , "NUMBER?" ~> LispFunction lispNUMBERP
+    , "NUMBERP" ~> LispFunction lispNUMBERP
     ]
 
 guaranteeNotZero :: LispNumber -> Execution ()
@@ -250,8 +250,8 @@ lispSQRT args
 
 lispNUMBERP :: Procedure
 lispNUMBERP args
-    | length args > 1 = throwE (TooManyArguments "NUMBER?" 1)
-    | null args       = throwE (TooFewArguments "NUMBER?" 1)
+    | length args > 1 = throwE (TooManyArguments "NUMBERP" 1)
+    | null args       = throwE (TooFewArguments "NUMBERP" 1)
     | otherwise       =
         case head args of
             (LispReal _)      -> return (LispBool True)

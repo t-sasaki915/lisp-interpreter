@@ -36,8 +36,8 @@ lexicalScopeTest src e =
 lexicalScopeTest1 :: Test
 lexicalScopeTest1 = lexicalScopeTest
     (unlines
-        [ "(define *a* 0)"
-        , "(set! *a* 5)"
+        [ "(defvar *a*)"
+        , "(setq *a* 5)"
         , "*a*"
         ]
     )
@@ -46,8 +46,8 @@ lexicalScopeTest1 = lexicalScopeTest
 lexicalScopeTest2 :: Test
 lexicalScopeTest2 = lexicalScopeTest
     (unlines
-        [ "(define *a* 0)"
-        , "(set! *a* 5)"
+        [ "(defvar *a*)"
+        , "(setq *a* 5)"
         , "(let ((*a* 3)) *a*)"
         ]
     )
@@ -56,8 +56,7 @@ lexicalScopeTest2 = lexicalScopeTest
 lexicalScopeTest3 :: Test
 lexicalScopeTest3 = lexicalScopeTest
     (unlines
-        [ "(define *a* 0)"
-        , "(set! *a* 5)"
+        [ "(defvar *a* 5)"
         , "(let ((*a* 3)) *a*)"
         , "*a*"
         ]
@@ -67,7 +66,7 @@ lexicalScopeTest3 = lexicalScopeTest
 lexicalScopeTest4 :: Test
 lexicalScopeTest4 = lexicalScopeTest
     (unlines
-        [ "(define func-lex (let ((a 3)) (lambda () a)))"
+        [ "(defvar func-lex (let ((a 3)) (lambda () a)))"
         , "(let ((a 5)) (func-lex))"
         ]
     )
@@ -76,8 +75,8 @@ lexicalScopeTest4 = lexicalScopeTest
 lexicalScopeTest5 :: Test
 lexicalScopeTest5 = lexicalScopeTest
     (unlines
-        [ "(define *a* 5)"
-        , "(define func-dyn (let ((*a* 3)) (lambda () *a*)))"
+        [ "(defvar *a* 5)"
+        , "(defvar func-dyn (let ((*a* 3)) (lambda () *a*)))"
         , "(func-dyn)"
         ]
     )

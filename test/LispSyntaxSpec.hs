@@ -29,17 +29,17 @@ lispQUOTETest1 = lispProcedureTest lispQUOTE
     [LispList [LispSymbol "+", LispInteger 1, LispInteger 2, LispInteger 3]]
     (return (LispList [LispSymbol "+", LispInteger 1, LispInteger 2, LispInteger 3]))
 
-lispBEGINTest1 :: Test
-lispBEGINTest1 = lispProcedureTest lispBEGIN
+lispPROGNTest1 :: Test
+lispPROGNTest1 = lispProcedureTest lispPROGN
     [LispInteger 1, LispInteger 2, LispInteger 3, LispInteger 4, LispInteger 5]
     (return (LispInteger 5))
 
-lispBEGINTest2 :: Test
-lispBEGINTest2 = lispProcedureTest lispBEGIN
+lispPROGNTest2 :: Test
+lispPROGNTest2 = lispProcedureTest lispPROGN
     [LispInteger 1, LispInteger 2, LispList [LispSymbol "SIN", LispReal 1.0]]
     (return (LispReal 0.84147096))
 
-lispBEGINTest3 :: Test
-lispBEGINTest3 = lispProcedureTest lispBEGIN
+lispPROGNTest3 :: Test
+lispPROGNTest3 = lispProcedureTest lispPROGN
     []
     (return (LispBool False))

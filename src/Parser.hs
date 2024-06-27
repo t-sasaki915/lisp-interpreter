@@ -122,9 +122,9 @@ finaliseRead buffer =
                 Nothing ->
                     let upperCase = map toUpper buffer in
                     case upperCase of
-                        "#T" ->
+                        "T" ->
                             return (LispBool True)
-                        "#F" ->
+                        "NIL" ->
                             return (LispBool False)
 
                         _ | upperCase =~ "[0-9]+\\/[0-9]+" == upperCase ->

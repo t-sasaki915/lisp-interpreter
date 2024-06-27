@@ -26,9 +26,9 @@ main = do
             , TestLabel "Lisp IF Test 1"                      lispIFTest1
             , TestLabel "Lisp IF Test 2"                      lispIFTest2
             , TestLabel "Lisp QUOTE Test 1"                   lispQUOTETest1
-            , TestLabel "Lisp BEGIN Test 1"                   lispBEGINTest1
-            , TestLabel "Lisp BEGIN Test 2"                   lispBEGINTest2
-            , TestLabel "Lisp BEGIN Test 3"                   lispBEGINTest3
+            , TestLabel "Lisp PROGN Test 1"                   lispPROGNTest1
+            , TestLabel "Lisp PROGN Test 2"                   lispPROGNTest2
+            , TestLabel "Lisp PROGN Test 3"                   lispPROGNTest3
 
             , TestLabel "Lexical Scope Test 1"                lexicalScopeTest1
             , TestLabel "Lexical Scope Test 2"                lexicalScopeTest2

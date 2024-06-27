@@ -18,11 +18,12 @@ lispPredefSyntaxes :: [(String, LispEnvData)]
 lispPredefSyntaxes =
     [ "IF"     ~> LispSyntax lispIF
     , "QUOTE"  ~> LispSyntax lispQUOTE
-    , "DEFINE" ~> LispSyntax lispDEFINE
+    , "DEFUN"  ~> LispSyntax lispDEFUN
+    , "DEFVAR" ~> LispSyntax lispDEFVAR
     , "LET"    ~> LispSyntax lispLET
-    , "SET!"   ~> LispSyntax lispSETQ
+    , "SETQ"   ~> LispSyntax lispSETQ
     , "LAMBDA" ~> LispSyntax lispLAMBDA
-    , "BEGIN"  ~> LispSyntax lispBEGIN
+    , "PROGN"  ~> LispSyntax lispPROGN
     ]
 
 makeClosure :: [String] -> [LispData] -> Execution LispData
@@ -51,28 +52,29 @@ lispQUOTE args
     | null args       = throwE (TooFewArguments "QUOTE" 1)
     | otherwise       = getM args 0
 
-lispDEFINE :: Procedure
-lispDEFINE args
-    | length args < 2 = throwE (TooFewArguments "DEFINE" 2)
-    | otherwise       =
-        case head args of
-            (LispSymbol label) -> do
-                expr <- mapM eval (tail args)
-                _    <- bindEnvDataGlobally label (LispVariable (last expr))
-                return (LispSymbol label)
+lispDEFUN :: Procedure
+lispDEFUN args
+    | length args < 3 = throwE (TooFewArguments "DEFUN" 3)
+    | otherwise       = do
+        label    <- treatAsLispSymbol (head args)
+        bindList <- treatAsLispList (args !! 1)
+        bindings <- mapM treatAsLispSymbol bindList
+        closure  <- makeClosure bindings (drop 2 args)
+        _        <- bindEnvDataGlobally label (LispVariable closure)
+        return (LispSymbol label)
 
-            (LispList []) ->
-                throwE (TooFewArguments "Binding" 1)
-
-            (LispList lst) -> do
-                label    <- treatAsLispSymbol (head lst)
-                bindings <- mapM treatAsLispSymbol (drop 1 lst)
-                closure  <- makeClosure bindings (drop 1 args)
-                _        <- bindEnvDataGlobally label (LispVariable closure)
-                return (LispSymbol label)
-
-            d ->
-                throwE (IncompatibleType (dataType d) "SYMBOL")
+lispDEFVAR :: Procedure
+lispDEFVAR args
+    | null args        = throwE (TooFewArguments "DEFVAR" 1)
+    | length args == 1 = do
+        label <- treatAsLispSymbol (head args)
+        _     <- bindEnvDataGlobally label LispVariableBind
+        return (LispSymbol label)
+    | otherwise        = do
+        label <- treatAsLispSymbol (head args)
+        value <- mapM eval (drop 1 args) <&> last
+        _     <- bindEnvDataGlobally label (LispVariable value)
+        return (LispSymbol label)
 
 lispLET :: Procedure
 lispLET args
@@ -108,7 +110,7 @@ lispLET args
 
 lispSETQ :: Procedure
 lispSETQ args
-    | length args < 2 = throwE (TooFewArguments "SET!" 2)
+    | length args < 2 = throwE (TooFewArguments "SETQ" 2)
     | otherwise       = do
         (globe, lexi) <- lift get <&> transformEnv
         label <- treatAsLispSymbol (head args)
@@ -139,7 +141,7 @@ lispLAMBDA args
 
         makeClosure bindings (drop 1 args)
 
-lispBEGIN :: Procedure
-lispBEGIN args
+lispPROGN :: Procedure
+lispPROGN args
     | null args = return (LispBool False)
     | otherwise = mapM eval args <&> last

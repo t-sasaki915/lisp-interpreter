@@ -47,7 +47,7 @@ parserTest2 = parserTest
 
 parserTest3 :: Test
 parserTest3 = parserTest
-    "(aa 1 2.0 3/4 #\\a #\\Return #t #F \"hello\")"
+    "(aa 1 2.0 3/4 #\\a #\\Return t nil \"hello\")"
     ( return
         [ LispList
             [ LispSymbol "AA"
