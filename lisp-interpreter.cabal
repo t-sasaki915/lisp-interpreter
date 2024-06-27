@@ -50,6 +50,8 @@ library
 executable lisp-interpreter-exe
   main-is: Main.hs
   other-modules:
+      FileInterpreter
+      InteractiveInterpreter
       Paths_lisp_interpreter
   hs-source-dirs:
       app

@@ -60,6 +60,9 @@ parse' src i (Start nestDep) =
 
 parse' src i (CollectingElems nestDep lst) =
     case src !! i of
+        c | c `elem` [' ', '\t', '\n'] ->
+            parse' src (i + 1) (CollectingElems nestDep lst)
+
         ')' ->
             return (i, mkQuoteNest nestDep (LispList lst))
 

@@ -58,6 +58,10 @@ treatAsLispList :: LispData -> Execution [LispData]
 treatAsLispList (LispList l) = return l
 treatAsLispList d = throwE (IncompatibleType (dataType d) "LIST")
 
+treatAsLispInteger :: LispData -> Execution Integer
+treatAsLispInteger (LispInteger n) = return n
+treatAsLispInteger d = throwE (IncompatibleType (dataType d) "INT")
+
 updateFunctionBinds :: [(String, LispEnvData)] -> Execution ()
 updateFunctionBinds funcs = do
     env <- lift get
