@@ -27,7 +27,9 @@ lispPredefSyntaxes =
 
 makeClosure :: [String] -> [LispData] -> Execution LispData
 makeClosure binds progs = do
-    (_, lexi) <- lift get <&> transformEnv
+    (globe, _) <- lift get <&> transformEnv
+    mapM_ (unbindEnvDataLexically . fst) globe
+    (_, lexi)  <- lift get <&> transformEnv
     let newLexi = lexi ++ map (~> LispVariableBind) binds
     return (LispClosure newLexi progs)
 
@@ -114,7 +116,7 @@ lispSETQ args
             Just (LispVariable _) -> rebind label bindEnvDataLexically
 
             Just LispVariableBind -> rebind label bindEnvDataLexically
-            
+
             _ ->
                 case lookup label globe of
                     Just (LispVariable _) -> rebind label bindEnvDataGlobally
