@@ -16,14 +16,15 @@ import Data.Functor ((<&>))
 
 lispPredefSyntaxes :: [(String, LispEnvData)]
 lispPredefSyntaxes =
-    [ "IF"     ~> LispSyntax lispIF
-    , "QUOTE"  ~> LispSyntax lispQUOTE
-    , "DEFUN"  ~> LispSyntax lispDEFUN
-    , "DEFVAR" ~> LispSyntax lispDEFVAR
-    , "LET"    ~> LispSyntax lispLET
-    , "SETQ"   ~> LispSyntax lispSETQ
-    , "LAMBDA" ~> LispSyntax lispLAMBDA
-    , "PROGN"  ~> LispSyntax lispPROGN
+    [ "IF"           ~> LispSyntax lispIF
+    , "QUOTE"        ~> LispSyntax lispQUOTE
+    , "DEFUN"        ~> LispSyntax lispDEFUN
+    , "DEFVAR"       ~> LispSyntax lispDEFVAR
+    , "DEFPARAMETER" ~> LispSyntax lispDEFPARAMETER
+    , "LET"          ~> LispSyntax lispLET
+    , "SETQ"         ~> LispSyntax lispSETQ
+    , "LAMBDA"       ~> LispSyntax lispLAMBDA
+    , "PROGN"        ~> LispSyntax lispPROGN
     ]
 
 makeClosure :: [String] -> [LispData] -> Execution LispData
@@ -71,6 +72,15 @@ lispDEFVAR args
         _     <- bindEnvDataGlobally label LispVariableBind
         return (LispSymbol label)
     | otherwise        = do
+        label <- treatAsLispSymbol (head args)
+        value <- mapM eval (drop 1 args) <&> last
+        _     <- bindEnvDataGlobally label (LispVariable value)
+        return (LispSymbol label)
+
+lispDEFPARAMETER :: Procedure
+lispDEFPARAMETER args
+    | length args < 2 = throwE (TooFewArguments "DEFPARAMETER" 2)
+    | otherwise       = do
         label <- treatAsLispSymbol (head args)
         value <- mapM eval (drop 1 args) <&> last
         _     <- bindEnvDataGlobally label (LispVariable value)
