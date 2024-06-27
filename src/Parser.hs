@@ -20,17 +20,26 @@ parse :: String -> Except ParseError [LispData]
 parse src = recursive 0 []
     where
         recursive :: Int -> [LispData] -> Except ParseError [LispData]
-        recursive i lds | i + 1 >= length src = return lds
+        recursive i []  | i >= length src = throwE UnexpectedEOF
+        recursive i lds | i >= length src = return lds
         recursive i lds = do
             (i', ld) <- parse' src i (Start 0)
-            recursive (i' + 1) (lds ++ [ld])
+            case ld of
+                Just d  -> recursive (i' + 1) (lds ++ [d])
+                Nothing -> recursive (i' + 1) lds
 
-parse' :: String -> Int -> Status -> Except ParseError (Int, LispData)
+parse' :: String -> Int -> Status -> Except ParseError (Int, Maybe LispData)
 parse' src i status | i >= length src =
     case status of
         (ReadingSymb nestDep buffer) -> do
             symb <- finaliseRead buffer <&> mkQuoteNest nestDep
-            return (i - 1, symb)
+            return (i - 1, Just symb)
+
+        (Start 0) ->
+            return (i, Nothing)
+
+        (Ignoring (Start 0)) ->
+            return (i, Nothing)
 
         _ ->
             throwE UnexpectedEOF
@@ -63,17 +72,25 @@ parse' src i (CollectingElems nestDep lst) =
         c | c `elem` [' ', '\t', '\n'] ->
             parse' src (i + 1) (CollectingElems nestDep lst)
 
+        ';' ->
+            parse' src (i + 1) (Ignoring (CollectingElems nestDep lst))
+
         ')' ->
-            return (i, mkQuoteNest nestDep (LispList lst))
+            return (i, Just $ mkQuoteNest nestDep (LispList lst))
 
         _ -> do
             (i', dat) <- parse' src i (Start 0)
-            parse' src (i' + 1) (CollectingElems nestDep (lst ++ [dat]))
+            case dat of
+                Just d ->
+                    parse' src (i' + 1) (CollectingElems nestDep (lst ++ [d]))
+
+                Nothing ->
+                    throwE UnexpectedEOF
 
 parse' src i (ReadingStr nestDep buffer) =
     case src !! i of
         '"' ->
-            return (i, mkQuoteNest nestDep (LispString buffer))
+            return (i, Just $ mkQuoteNest nestDep (LispString buffer))
 
         c ->
             parse' src (i + 1) (ReadingStr nestDep (buffer ++ [c]))
@@ -82,7 +99,7 @@ parse' src i (ReadingSymb nestDep buffer) =
     case src !! i of
         c | c `elem` ['(', ')', '\'', '"', ';', ' ', '\t', '\n'] -> do
             symb <- finaliseRead buffer <&> mkQuoteNest nestDep
-            return (i - 1, symb)
+            return (i - 1, Just symb)
 
         c ->
             parse' src (i + 1) (ReadingSymb nestDep (buffer ++ [c]))
